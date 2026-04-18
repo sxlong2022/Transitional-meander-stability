@@ -14,6 +14,9 @@ Traditional river stability theory has predominantly been tested under laborator
   - `os_operator_curved.py`: Implements curvature-induced secondary flow (bend effects) into the basic OS equations.
   - `u1_shape.py`: Solves for the unperturbed base flow shape function in a curved channel.
 - **`utils/`**:
+  - `diagnose_stability.py`: A wrapper to easily diagnose if a reach (given Width/Depth ratio, Froude number, friction coefficient, and curvature) is unstable, extracting maximum growth rates and critical wavelengths.
+  - `analyze_profiles.py`: Spatial spectral analysis tools (FFT, Autocorrelation) for identifying fundamental length scales from planform variations.
+  - `predict_bars.py`: Bar mode predictor combining Crosato-Mosselman empirical formula with OS instability window.
   - **`utils/`**:
   - `diagnose_stability.py`: A wrapper to easily diagnose if a reach (given Width/Depth ratio, Froude number, friction coefficient, and curvature) is unstable, extracting maximum growth rates and critical wavelengths.
   - `analyze_profiles.py`: Spatial spectral analysis tools (FFT, Autocorrelation) for identifying fundamental length scales from planform variations.
