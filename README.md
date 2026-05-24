@@ -1,7 +1,7 @@
-# Planar Two-Dimensional Morphodynamic Stability Diagnosis of Bar Instability
+# Planar 2D SWE--Exner Stability of Alternate Bars in Transitional Rivers
 
 > **Open-Source Code for the Manuscript:**  
-> *Planar two-dimensional morphodynamic stability diagnosis of ubiquitous bar instability in the transitional Lower Yellow River* (Submitted to *Earth Surface Processes and Landforms*)
+> *Planar 2D SWE--Exner stability of alternate bars in the transitional Lower Yellow River* (Submitted to *Earth Surface Processes and Landforms*)
 
 This repository provides the core theoretical framework and analysis tools used to evaluate the linear morphodynamic stability of extremely wide, transitional meandering-braided rivers.
 
