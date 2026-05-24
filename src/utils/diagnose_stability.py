@@ -1,9 +1,9 @@
-"""OS Stability Diagnosis Module: Diagnose the instability of river sandbanks from hydraulic parameters.
+"""OS 稳定性诊断模块：从水力参数诊断河道砂洲不稳定性。
 
-Encapsulate Route B's OS stability solution into a reproducible diagnostic interface.
-Supports single point diagnosis, time series batch diagnosis, and spatial profile batch diagnosis.
+将 Route B 的 OS 稳定性求解封装为可重复调用的诊断接口。
+支持单点诊断、时间序列批量诊断、空间剖面批量诊断。
 
-Typical usage::
+典型用法::
 
     from src.diagnostics import diagnose_stability
     result = diagnose_stability(beta=132.0, Fr=0.257, Cf=0.00176, nu_curvature=0.004)
@@ -32,7 +32,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     except AttributeError:
         pass
 
-from src.stability.run_beta_sweep import (  # noqa: E402
+from src.os_solver.run_beta_sweep import (  # noqa: E402
     alpha_sweep,
     alpha_sweep_curved,
     find_most_unstable,
@@ -42,42 +42,42 @@ from src.stability.run_beta_sweep import (  # noqa: E402
 
 
 # =====================================================================
-# data class
+# 数据类
 # =====================================================================
 
 @dataclasses.dataclass
 class StabilityResult:
-    """OS stability diagnostic results.
+    """OS 稳定性诊断结果。
 
-    property
+    属性
     ------
     omega_i_max : float
-        Maximum time growth rate (dimensionless).
+        最大时间增长率（无量纲）。
     alpha_crit : float
-        Critical wave number (alpha corresponding to maximum growth rate).
+        临界波数（对应最大增长率的 alpha）。
     c_phase : float
-        Phase velocity c_r at critical wave number.
+        临界波数处的相速度 c_r。
     lambda_crit : float
-        Critical wavelength (in water depth H) = 2*pi / alpha_crit.
+        临界波长（以水深 H 为单位） = 2*pi / alpha_crit。
     lambda_crit_m : float
-        Critical wavelength (meters), D_m must be provided to calculate; otherwise NaN.
+        临界波长（米），需提供 D_m 方可计算；否则为 NaN。
     stability_class : str
-        Stability classification: strongly_unstable / weakly_unstable /
+        稳定性分类：strongly_unstable / weakly_unstable /
         near_marginal / stable。
     curvature_enhancement : float
-        The percentage increase in growth rate due to curvature.
+        曲率导致的增长率增幅百分比。
     nu_beta_product : float
-        Bending parameter = nu * beta (= B / R).
+        弯曲参数 = nu * beta (= B / R)。
     mode_type : str
-        Modal types: short_wave/transitional/long_wave_bend.
+        模态类型：short_wave / transitional / long_wave_bend。
     beta : float
-        Width to depth ratio B/H.
+        宽深比 B / H。
     Fr : float
-        Froude number.
+        Froude 数。
     Cf : float
-        Friction coefficient.
+        摩阻系数。
     nu_curvature : float
-        Curvature parameter H/R.
+        曲率参数 H / R。
     """
 
     omega_i_max: float
@@ -97,24 +97,24 @@ class StabilityResult:
 
 @dataclasses.dataclass
 class AlphaSweepResult:
-    """OS alpha-sweep complete results, including omega_i(alpha) curve and unstable wavenumber range.
+    """OS alpha-sweep 完整结果，包含 omega_i(alpha) 曲线与不稳定波数范围。
 
-    property
+    属性
     ------
     alpha_arr : np.ndarray
-        Wavenumber array.
+        波数数组。
     omega_i_arr : np.ndarray
-        The maximum time growth rate corresponding to each wave number.
+        各波数对应的最大时间增长率。
     c_r_arr : np.ndarray
-        The phase velocity corresponding to each wave number.
+        各波数对应的相速度。
     alpha_unstable_min : float
-        Lower bound on the unstable wavenumber range (minimum alpha for omega_i > 0), or NaN if none.
+        不稳定波数范围下界（omega_i > 0 的最小 alpha），无则 NaN。
     alpha_unstable_max : float
-        Upper bound on the unstable wavenumber range (maximum alpha for omega_i > 0), or NaN if none.
+        不稳定波数范围上界（omega_i > 0 的最大 alpha），无则 NaN。
     n_unstable : int
-        The number of unstable wavenumber sampling points.
+        不稳定波数采样点数。
     stability_result : StabilityResult
-        Corresponding single point diagnosis results (peak information).
+        对应的单点诊断结果（峰值信息）。
     """
 
     alpha_arr: np.ndarray
@@ -127,7 +127,7 @@ class AlphaSweepResult:
 
 
 # =====================================================================
-# Classification threshold
+# 分类阈值
 # =====================================================================
 
 _STABILITY_THRESHOLDS = {
@@ -139,7 +139,7 @@ _STABILITY_THRESHOLDS = {
 
 
 def _classify_stability(omega_i: float) -> str:
-    """Classifies stability according to growth rate omega_i."""
+    """根据增长率 omega_i 分类稳定性。"""
     if not np.isfinite(omega_i):
         return "unknown"
     if omega_i > _STABILITY_THRESHOLDS["strongly_unstable"]:
@@ -152,7 +152,7 @@ def _classify_stability(omega_i: float) -> str:
 
 
 def _classify_mode(alpha_crit: float) -> str:
-    """Classify mode types based on critical wave numbers."""
+    """根据临界波数分类模态类型。"""
     if not np.isfinite(alpha_crit):
         return "unknown"
     if alpha_crit > 0.3:
@@ -163,7 +163,7 @@ def _classify_mode(alpha_crit: float) -> str:
 
 
 # =====================================================================
-# Core diagnostic functions
+# 核心诊断函数
 # =====================================================================
 
 def diagnose_stability(
@@ -173,41 +173,41 @@ def diagnose_stability(
     nu_curvature: float = 0.0,
     alpha_range: tuple[float, float] = (0.01, 15.0),
     n_alpha: int = 200,
-    N_cheb: int = 80,
+    N_cheb: int = 20,
     profile_mode: str = "zs_turbulent",
     A_scour: float = 4.0,
     D_m: float | None = None,
     return_alpha_sweep: bool = False,
 ) -> StabilityResult | AlphaSweepResult:
-    """Diagnosis of OS sandbar instability for given hydraulic parameters.
+    """对给定水力参数诊断 OS 砂洲不稳定性。
 
-    parameter
+    参数
     ------
     beta : float
-        Width to depth ratio B/H.
+        宽深比 B / H。
     Fr : float
-        Froude number.
+        Froude 数。
     Cf : float
-        Friction coefficient (energy method).
+        摩阻系数（能量法）。
     nu_curvature : float
-        Curvature parameter H/R, default 0 (pure straight river section OS).
+        曲率参数 H/R，默认 0（纯直河段 OS）。
     alpha_range : tuple
-        Wavenumber scan range (alpha_min, alpha_max).
+        波数扫描范围 (alpha_min, alpha_max)。
     n_alpha : int
-        Wavenumber sampling points.
+        波数采样点数。
     N_cheb : int
-        Order of Chebyshev's collocation method.
+        Chebyshev 配点法阶数。
     profile_mode : str
-        Baseflow profile mode.
+        基流剖面模式。
     A_scour : float
-        Erosion amplification factor.
+        冲刷放大系数。
     D_m : float or None
-        Physical water depth (meters), used to convert wavelength to meters.
+        物理水深（米），用于将波长转换为米。
     return_alpha_sweep : bool
-        If True, returns AlphaSweepResult (containing the complete omega_i(alpha) curve
-        and instability wavenumber range); otherwise returns StabilityResult (peak values ​​only).
+        若为 True，返回 AlphaSweepResult（含完整 omega_i(alpha) 曲线
+        和不稳定波数范围）；否则返回 StabilityResult（仅峰值）。
 
-    return
+    返回
     ------
     StabilityResult or AlphaSweepResult
     """
@@ -351,7 +351,7 @@ def diagnose_stability(
 
 
 # =====================================================================
-# Batch Diagnostics: Time Series
+# 批量诊断：时间序列
 # =====================================================================
 
 def diagnose_timeseries(
@@ -362,23 +362,23 @@ def diagnose_timeseries(
     Cf_col: str = "Cf_energy",
     **kwargs,
 ) -> list[dict]:
-    """Run OS diagnostics on a year-by-year basis for hydraulic parameter time series.
+    """对水力参数时间序列逐年运行 OS 诊断。
 
-    parameter
+    参数
     ------
     csv_path : str or Path
-        Time series CSV path (requires year, beta, Fr, Cf_energy columns).
+        时间序列 CSV 路径（需含 year, beta, Fr, Cf_energy 列）。
     nu_curvature : float
-        Curvature parameter, default 0.004.
+        曲率参数，默认 0.004。
     beta_col, Fr_col, Cf_col : str
-        Column name mapping.
+        列名映射。
     **kwargs
-        Additional parameters passed to diagnose_stability.
+        传递给 diagnose_stability 的其他参数。
 
-    return
+    返回
     ------
     list[dict]
-        Each row contains one year of diagnostic results + year field.
+        每行为一年的诊断结果 + year 字段。
     """
     csv_path = Path(csv_path)
     if not csv_path.exists():
@@ -412,7 +412,7 @@ def diagnose_timeseries(
 
 
 # =====================================================================
-# Batch Diagnostics: Spatial Profiles
+# 批量诊断：空间剖面
 # =====================================================================
 
 def diagnose_spatial(
@@ -424,23 +424,23 @@ def diagnose_spatial(
     distance_col: str = "dist_km",
     **kwargs,
 ) -> list[dict]:
-    """Run OS diagnostics on a section-by-section basis on spatial profiles.
+    """对空间剖面逐断面运行 OS 诊断。
 
-    parameter
+    参数
     ------
     csv_path : str or Path
-        Spatial CSV path (requires dist_km, beta, Fr, Cf_energy columns).
+        空间 CSV 路径（需含 dist_km, beta, Fr, Cf_energy 列）。
     nu_curvature : float
-        Curvature parameter, default 0.004.
+        曲率参数，默认 0.004。
     distance_col : str
-        Distance column name.
+        距离列名。
     **kwargs
-        Additional parameters passed to diagnose_stability.
+        传递给 diagnose_stability 的其他参数。
 
-    return
+    返回
     ------
     list[dict]
-        Each line is the diagnostic result of one section + dist_km field.
+        每行为一个断面的诊断结果 + dist_km 字段。
     """
     csv_path = Path(csv_path)
     if not csv_path.exists():

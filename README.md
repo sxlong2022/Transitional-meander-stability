@@ -1,30 +1,19 @@
-# Field-scale Orr-Sommerfeld Diagnosis of Bar Instability
+# Planar Two-Dimensional Morphodynamic Stability Diagnosis of Bar Instability
 
 > **Open-Source Code for the Manuscript:**  
-> *Field-scale Orr-Sommerfeld diagnosis of ubiquitous bar instability in the transitional Lower Yellow River* (Submitted to *Geomorphology*)
+> *Planar two-dimensional morphodynamic stability diagnosis of ubiquitous bar instability in the transitional Lower Yellow River* (Submitted to *Earth Surface Processes and Landforms*)
 
 This repository provides the core theoretical framework and analysis tools used to evaluate the linear morphodynamic stability of extremely wide, transitional meandering-braided rivers.
 
 ## Overview
-Traditional river stability theory has predominantly been tested under laboratory conditions. This project scales the classic Orr-Sommerfeld (OS) fluid mechanics stability diagnosis to field-scale geomorphic parameters. 
+Traditional river stability theory has predominantly been tested under laboratory conditions. This project scales planar two-dimensional shallow-water equation (2D SWE) coupled with the Exner sediment continuity equation (planar 2D SWE--Exner) stability diagnosis to field-scale geomorphic parameters. 
 
 ### Key Capabilities
 - **`os_solver/`**: 
   - `solve_os.py`: Core Chebyshev collocation eigenvalue solver for bar instability.
-  - `os_operator_curved.py`: Implements curvature-induced secondary flow (bend effects) into the basic OS equations.
+  - `os_operator_curved.py`: Implements curvature-induced secondary flow (bend effects) into the basic 2D SWE--Exner stability equations.
   - `u1_shape.py`: Solves for the unperturbed base flow shape function in a curved channel.
-- **`utils/`**:
-  - `diagnose_stability.py`: A wrapper to easily diagnose if a reach (given Width/Depth ratio, Froude number, friction coefficient, and curvature) is unstable, extracting maximum growth rates and critical wavelengths.
-  - `analyze_profiles.py`: Spatial spectral analysis tools (FFT, Autocorrelation) for identifying fundamental length scales from planform variations.
-  - `predict_bars.py`: Bar mode predictor combining Crosato-Mosselman empirical formula with OS instability window.
-  - **`utils/`**:
-  - `diagnose_stability.py`: A wrapper to easily diagnose if a reach (given Width/Depth ratio, Froude number, friction coefficient, and curvature) is unstable, extracting maximum growth rates and critical wavelengths.
-  - `analyze_profiles.py`: Spatial spectral analysis tools (FFT, Autocorrelation) for identifying fundamental length scales from planform variations.
-
-(Note: `predict_bars.py` and spectral modules are not included in this release.)
-  - `analyze_profiles.py`: Spatial spectral analysis tools (FFT, Autocorrelation) for identifying fundamental length scales from planform variations.
   - `predict_bars.py`: Bar mode predictor using empirical and physics-based models (e.g., Crosato-Mosselman).
-
 ## Setup & Requirements
 
 Requires **Python 3.9+**.
@@ -45,7 +34,7 @@ python -m examples.example_01_solve_os
 ```
 
 ## Citation
-If you use this code in your research, please cite our corresponding *Geomorphology* manuscript.
+If you use this code in your research, please cite our corresponding *Earth Surface Processes and Landforms* (ESPL) manuscript.
 
 ## License
 MIT License.

@@ -1,10 +1,10 @@
-"""Curvature shape function U1(y) factory module.
+"""曲率形状函数 U1(y) 工厂模块.
 
-Based on Gemini derivation 3-4, two U1(y) shape functions are implemented:
-1. self_similar: U1 ∝ U0 (curvature correction maintains the same vertical shape as the base flow)
-2. polynomial_zs: cubic polynomial satisfying Ψ(0)=0, Ψ(1)=1, Ψ'(1)=0
+基于 Gemini 推导 3-4，实现两种 U1(y) 形状函数：
+1. self_similar：U1 ∝ U0（曲率修正保持与基流相同的垂向形状）
+2. polynomial_zs：满足 Ψ(0)=0, Ψ(1)=1, Ψ'(1)=0 的立方多项式
 
-References:
+参考文献：
 - Zolezzi & Seminara (2001)
 - Ikeda, Parker & Sawai (1981)
 - Johannesson & Parker (1989)
@@ -21,26 +21,26 @@ def compute_u1_amplitude(
     Cf: float | None = None,
     A_scour: float = 4.0,
 ) -> float:
-    """Calculate the U1 amplitude scaling factor S_amp (O(1) quantity).
+    """计算 U1 幅值标度因子 S_amp（O(1) 量）.
 
-    Based on IPS equilibrium scale:
+    基于 IPS 平衡态标度：
         S_amp = (beta / 2) * (A_scour + Fr^2)
 
     Parameters
     ----------
     beta : float
-        Width to depth ratio B/H
+        宽深比 B/H
     Fr : float
-        Froude number
+        Froude 数
     Cf : float, optional
-        Friction coefficient, currently not used (reserved for finer scaling)
+        摩擦系数，当前未使用（预留给更精细的标度）
     A_scour : float
-        Washout factor, typical 4.0 (IPS model)
+        冲刷因子，典型值 4.0（IPS 模型）
 
     Returns
     -------
     float
-        Amplitude scaling factor S_amp
+        幅值标度因子 S_amp
     """
     return (beta / 2.0) * (A_scour + Fr ** 2)
 
@@ -55,39 +55,39 @@ def make_u1_self_similar(
     Cf: float | None = None,
     A_scour: float = 4.0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Self-Similar shape function: U1 ∝ U0.
+    """Self-Similar 形状函数：U1 ∝ U0.
 
-    Physical assumption: The velocity increment caused by curvature scales equally at each depth,
-    That is, the high-speed core shifts toward the outer bank but maintains the same vertical distribution.
+    物理假设：曲率引起的速度增量在各深度等比例缩放，
+    即高速核向外岸偏移但保持相同的垂向分布。
 
     U1(y) = S_amp * U0(y) / mean(U0)
 
     Parameters
     ----------
     y : np.ndarray
-        Chebyshev grid y ∈ [-1, 1]
+        Chebyshev 网格 y ∈ [-1, 1]
     U0, U0_y, U0_yy : np.ndarray
-        Base flow and its first and second derivatives
+        基流及其一阶、二阶导数
     beta : float
-        Width to depth ratio B/H
+        宽深比 B/H
     Fr : float
-        Froude number
+        Froude 数
     Cf : float, optional
-        Friction coefficient
+        摩擦系数
     A_scour : float
-        washout factor
+        冲刷因子
 
     Returns
     -------
     U1, U1_y, U1_yy : np.ndarray
-        Curvature shape function and its derivatives
+        曲率形状函数及其导数
     """
     S_amp = compute_u1_amplitude(beta, Fr, Cf, A_scour)
 
-    # Depth averaging (using simple mean approximation Clenshaw-Curtis)
+    # 深度平均（使用简单均值近似 Clenshaw-Curtis）
     U0_mean = np.mean(U0)
     if np.abs(U0_mean) < 1e-12:
-        U0_mean = 1.0  # avoid division by zero
+        U0_mean = 1.0  # 避免除零
 
     scale = S_amp / U0_mean
     U1 = scale * U0
@@ -105,54 +105,54 @@ def make_u1_polynomial_zs(
     z0: float | None = None,
     A_scour: float = 4.0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Modified cubic polynomial shape function (Gemini derivation 4).
+    """修正立方多项式形状函数（Gemini 推导4）.
 
-    Satisfy boundary conditions:
-    - Ψ(0) = 0 (no slip on the river bed)
-    - Ψ(1) = 1 (normalized)
-    - Ψ'(1) = 0 (zero shear perturbation on the surface)
+    满足边界条件：
+    - Ψ(0) = 0（河床无滑移）
+    - Ψ(1) = 1（归一化）
+    - Ψ'(1) = 0（表面零剪切扰动）
 
-    Shape function:
+    形状函数：
         Ψ(ζ) = (3/2)ζ - (1/2)ζ³
-        where ζ = (y + 1) / 2 ∈ [0, 1]
+        其中 ζ = (y + 1) / 2 ∈ [0, 1]
 
-    Physical explanation: The profile grows linearly near the bed surface and becomes flat near the water surface.
-    Models the effect of secondary flows transporting momentum toward the surface/outshore.
+    物理解释：该剖面在床面附近线性增长，在水面附近趋于平坦，
+    模拟二次流将动量向表面/外岸输运的效应。
 
     Parameters
     ----------
     y : np.ndarray
-        Chebyshev grid y ∈ [-1, 1]
+        Chebyshev 网格 y ∈ [-1, 1]
     beta : float
-        Width to depth ratio B/H
+        宽深比 B/H
     Fr : float
-        Froude number
+        Froude 数
     Cf : float, optional
-        Friction coefficient
+        摩擦系数
     z0 : float, optional
-        Roughness height (ZS model), which in the current implementation is simplified to map to ζ ∈ [0, 1]
+        粗糙度高度（ZS 模型），当前实现中简化为映射到 ζ ∈ [0, 1]
     A_scour : float
-        washout factor
+        冲刷因子
 
     Returns
     -------
     U1, U1_y, U1_yy : np.ndarray
-        Curvature shape function and its derivatives
+        曲率形状函数及其导数
     """
     S_amp = compute_u1_amplitude(beta, Fr, Cf, A_scour)
 
-    # Normalized coordinates: y ∈ [-1, 1] → ζ ∈ [0, 1]
-    # Simplified processing: ignore z0, direct linear mapping
+    # 归一化坐标：y ∈ [-1, 1] → ζ ∈ [0, 1]
+    # 简化处理：忽略 z0，直接线性映射
     # ζ = (y + 1) / 2, dζ/dy = 0.5
     zeta = 0.5 * (y + 1.0)
     zeta = np.clip(zeta, 0.0, 1.0)
 
-    # Shape function Ψ(ζ) = 1.5ζ - 0.5ζ³
+    # 形状函数 Ψ(ζ) = 1.5ζ - 0.5ζ³
     Psi = 1.5 * zeta - 0.5 * zeta ** 3
     dPsi_dzeta = 1.5 - 1.5 * zeta ** 2
     d2Psi_dzeta2 = -3.0 * zeta
 
-    # Chain rule: d/dy = (dζ/dy) * d/dζ = 0.5 * d/dζ
+    # 链式法则：d/dy = (dζ/dy) * d/dζ = 0.5 * d/dζ
     # d²/dy² = 0.5² * d²/dζ²
     dzeta_dy = 0.5
 
@@ -172,28 +172,28 @@ def make_u1_shape_function(
     U0_y: np.ndarray | None = None,
     U0_yy: np.ndarray | None = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """U1 shape function factory (unified entrance).
+    """U1 形状函数工厂（统一入口）.
 
     Parameters
     ----------
     y : np.ndarray
-        Chebyshev Grid
+        Chebyshev 网格
     D, D2 : np.ndarray
-        First-order and second-order differential matrices
+        一阶、二阶微分矩阵
     params : Dict
-        Parameter dictionary, which needs to contain:
+        参数字典，需包含：
         - u1_shape_mode: "self_similar" | "polynomial_zs" | "analytic"
-        - beta: aspect ratio
-        - Fr: Froude number
-        - Cf: friction coefficient (optional)
-        - A_scour: scour factor (optional, default 4.0)
+        - beta: 宽深比
+        - Fr: Froude 数
+        - Cf: 摩擦系数（可选）
+        - A_scour: 冲刷因子（可选，默认 4.0）
     U0, U0_y, U0_yy : np.ndarray, optional
-        Base flow and its derivatives (required for self_similar mode)
+        基流及其导数（self_similar 模式需要）
 
     Returns
     -------
     U1, U1_y, U1_yy : np.ndarray
-        Curvature shape function and its derivatives
+        曲率形状函数及其导数
     """
     mode = str(params.get("u1_shape_mode", "analytic"))
     beta = float(params.get("beta", 10.0))
@@ -206,7 +206,7 @@ def make_u1_shape_function(
     if mode == "self_similar":
         if U0 is None or U0_y is None or U0_yy is None:
             raise ValueError(
-                "u1_shape_mode='self_similar'  U0, U0_y, U0_yy"
+                "u1_shape_mode='self_similar' 需要提供 U0, U0_y, U0_yy"
             )
         return make_u1_self_similar(y, U0, U0_y, U0_yy, beta, Fr, Cf, A_scour)
 
@@ -214,8 +214,8 @@ def make_u1_shape_function(
         z0 = params.get("z0", None)
         return make_u1_polynomial_zs(y, beta, Fr, Cf, z0, A_scour)
 
-    # Default: simple analytical form U1(y) = y * (1 - y²)
-    # This is the original analytic mode, with amplitude O(1)
+    # 默认：简单解析形式 U1(y) = y * (1 - y²)
+    # 这是原有的 analytic 模式，幅值为 O(1)
     U1 = y * (1.0 - y ** 2)
     U1_y = D @ U1
     U1_yy = D2 @ U1

@@ -1,11 +1,11 @@
-"""Bar mode prediction and diagnostic module.
+"""砂洲模态预测与诊断模块。
 
-Combines Crosato-Mosselman (2009) empirical formula, OS instability wavenumber window,
-and along-stream width gradient sigma_width diagnostics.
+结合 Crosato-Mosselman (2009) 经验公式、OS 不稳定波数窗口、
+以及沿程宽度梯度 σ_width 诊断，提供完整的砂洲模态预测框架。
 
-Typical usage::
+典型用法::
 
-    from src.utils import predict_bar_mode_cm, compute_unstable_window
+    from src.bar_modes import predict_bar_mode_cm, compute_unstable_window
     m = predict_bar_mode_cm(beta=132.0, Cf=0.00176)
     window = compute_unstable_window(beta=132.0, Fr=0.257, Cf=0.00176)
 """
@@ -14,7 +14,7 @@ from __future__ import annotations
 import dataclasses
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import numpy as np
 
@@ -38,41 +38,41 @@ from src.utils.diagnose_stability import (  # noqa: E402
 
 
 # =====================================================================
-# Dataclass
+# 数据类
 # =====================================================================
 
 @dataclasses.dataclass
 class BarDiagnostic:
-    """Comprehensive bar diagnostic result.
+    """砂洲模态综合诊断结果。
 
-    Attributes
-    ----------
+    属性
+    ------
     beta : float
-        Aspect ratio B / (2H).
+        宽深比 B / (2H)。
     Fr : float
-        Froude number.
+        Froude 数。
     Cf : float
-        Friction coefficient.
+        摩阻系数。
     m_cm : int
-        Crosato-Mosselman predicted bar mode number.
+        Crosato-Mosselman 预测的砂洲排数 (bar mode number)。
     bar_regime : str
-        Bar type: single_row / multi_row / braided.
+        砂洲类型判断：single_row / multi_row / braided。
     alpha_crit : float
-        OS most unstable wavenumber.
+        OS 最不稳定波数。
     omega_i_max : float
-        OS maximum growth rate.
+        OS 最大增长率。
     lambda_crit_m : float
-        OS most unstable wavelength (m); requires D_m.
+        OS 最不稳定波长（米）；需提供 D_m。
     alpha_unstable_min : float
-        Unstable wavenumber lower bound.
+        不稳定波数范围下界。
     alpha_unstable_max : float
-        Unstable wavenumber upper bound.
+        不稳定波数范围上界。
     n_unstable_frac : float
-        Fraction of sampled unstable wavenumbers.
+        不稳定波数采样点占比。
     lambda_unstable_min_m : float
-        Unstable wavelength lower bound (m).
+        不稳定波长范围下界（米）。
     lambda_unstable_max_m : float
-        Unstable wavelength upper bound (m).
+        不稳定波长范围上界（米）。
     """
 
     beta: float
@@ -91,7 +91,7 @@ class BarDiagnostic:
 
 
 # =====================================================================
-# Crosato-Mosselman (2009) bar mode prediction
+# Crosato-Mosselman (2009) 砂洲排数预测
 # =====================================================================
 
 def predict_bar_mode_cm(
@@ -100,37 +100,37 @@ def predict_bar_mode_cm(
     b_param: float = 1.7,
     sediment_exponent: float | None = None,
 ) -> int:
-    """Crosato-Mosselman (2009) empirical formula for bar mode prediction.
+    """Crosato-Mosselman (2009) 经验公式预测砂洲排数。
 
-    Simplified formula::
+    简化公式::
 
         m = round( (2 * beta) / (b * pi) )
 
-    where b ≈ 1.7 (Crosato & Mosselman 2009, Table 1 recommended value).
-    When sediment_exponent is provided, the full formula is used::
+    其中 b ≈ 1.7 (Crosato & Mosselman 2009, Table 1 推荐值)。
+    当提供 sediment_exponent 时使用完整公式::
 
         m = round( (beta / pi) * sqrt(Cf / epsilon) )
 
-    Parameters
-    ----------
+    参数
+    ------
     beta : float
-        Aspect ratio B / H.
+        宽深比 B / H。
     Cf : float
-        Friction coefficient (for full formula).
+        摩阻系数（用于完整公式）。
     b_param : float
-        Empirical constant for simplified formula, default 1.7.
+        简化公式中的经验常数 b，默认 1.7。
     sediment_exponent : float or None
-        Sediment transport exponent epsilon. If None, use simplified formula.
+        输沙公式中的指数参数 ε。若为 None 则使用简化公式。
 
-    Returns
-    -------
+    返回
+    ------
     int
-        Predicted bar mode number m (≥1).
+        预测砂洲排数 m（≥1）。
 
-    Note
-    ----
-    For high β (e.g., β > 100), m is large (multiple rows / braided),
-    consistent with the historical braided character of the Lower Yellow River.
+    注记
+    ------
+    对于高 β（如 β > 100），m 值很大（多排砂洲/辫状），
+    这与黄河下游历史辫状特征一致。
     """
     if beta <= 0:
         raise ValueError(f"beta must be positive, got {beta}")
@@ -148,7 +148,7 @@ def predict_bar_mode_cm(
 
 
 # =====================================================================
-# OS unstable wavenumber window
+# OS 不稳定波数窗口
 # =====================================================================
 
 def compute_unstable_window(
@@ -156,36 +156,36 @@ def compute_unstable_window(
     Fr: float,
     Cf: float,
     nu_curvature: float = 0.0,
-    alpha_range: Tuple[float, float] = (0.01, 15.0),
+    alpha_range: tuple[float, float] = (0.01, 15.0),
     n_alpha: int = 200,
     D_m: float | None = None,
     **kwargs,
 ) -> AlphaSweepResult:
-    """Compute OS unstable wavenumber window (full alpha-sweep curve).
+    """计算 OS 不稳定波数窗口（alpha-sweep 完整曲线）。
 
-    Parameters
-    ----------
+    参数
+    ------
     beta : float
-        Aspect ratio.
+        宽深比。
     Fr : float
-        Froude number.
+        Froude 数。
     Cf : float
-        Friction coefficient.
+        摩阻系数。
     nu_curvature : float
-        Curvature parameter H/R, default 0.
-    alpha_range : Tuple
-        Wavenumber sweep range, default (0.01, 15.0).
+        曲率参数 H/R，默认 0。
+    alpha_range : tuple
+        波数扫描范围，默认 (0.01, 15.0)，比诊断模块更宽。
     n_alpha : int
-        Number of wavenumber samples, default 200.
+        波数采样点数，默认 200（高分辨率）。
     D_m : float or None
-        Physical water depth (m), for wavelength conversion.
+        物理水深（米），用于波长换算。
     **kwargs
-        Other parameters passed to diagnose_stability.
+        传递给 diagnose_stability 的其他参数。
 
-    Returns
-    -------
+    返回
+    ------
     AlphaSweepResult
-        Contains full omega_i(alpha) curve and unstable range.
+        包含完整 omega_i(alpha) 曲线和不稳定范围。
     """
     result = diagnose_stability(
         beta=beta,
@@ -202,7 +202,7 @@ def compute_unstable_window(
 
 
 # =====================================================================
-# Along-stream width gradient sigma_width
+# 沿程宽度梯度 σ_width
 # =====================================================================
 
 def compute_sigma_width(
@@ -210,30 +210,29 @@ def compute_sigma_width(
     B_m: np.ndarray,
     smooth_window: int = 0,
 ) -> np.ndarray:
-    """Compute normalized width gradient sigma_width = (1/B) dB/ds from along-stream profile.
+    """从沿程宽度剖面计算归一化宽度梯度 σ_width = (1/B) dB/ds。
 
-    Parameters
-    ----------
+    参数
+    ------
     s_m : np.ndarray
-        Along-stream distance coordinate (m), monotonically increasing.
+        沿程距离坐标（米），单调递增。
     B_m : np.ndarray
-        Along-stream channel width (m), same length as s_m.
+        沿程河宽（米），与 s_m 等长。
     smooth_window : int
-        Smoothing window size (0 = no smoothing). If > 0, apply moving average
-        to B_m before differentiation.
+        平滑窗口大小（0 = 不平滑）。若 > 0，先对 B_m 做
+        移动平均再求导。
 
-    Returns
-    -------
+    返回
+    ------
     sigma_width : np.ndarray
-        Normalized width gradient array, same length as input (endpoints
-        use forward/backward diff).
+        归一化宽度梯度数组，与输入等长（端点用 forward/backward diff）。
 
-    Note
-    ----
-    sigma_width > 0 indicates widening, sigma_width < 0 indicates narrowing.
-    In non-uniform channels, zones with small positive sigma_width (≪ O(0.1))
-    often correspond to bar-bend cross-enhancement regime (gamma_BA < 0), i.e.,
-    gradual widening promotes bar growth in bends.
+    注记
+    ------
+    σ_width > 0 表示展宽段，σ_width < 0 表示收缩段。
+    在宽度非均匀河段中，σ_width > 0 且量级较小（≪ O(0.1)）的区间
+    通常对应 bar–bend 交叉增强模式（γ_BA < 0），即宽度缓慢展宽
+    有利于弯道内沙洲的增长。具体阈值取决于 β 和 Cf。
     """
     if len(s_m) != len(B_m):
         raise ValueError(
@@ -276,22 +275,22 @@ def compute_sigma_width_stats(
     B_m: np.ndarray,
     smooth_window: int = 5,
 ) -> dict:
-    """Compute statistics of along-stream sigma_width.
+    """计算沿程 σ_width 的统计特征。
 
-    Parameters
-    ----------
+    参数
+    ------
     s_m : np.ndarray
-        Along-stream distance (m).
+        沿程距离（米）。
     B_m : np.ndarray
-        Along-stream width (m).
+        沿程河宽（米）。
     smooth_window : int
-        Smoothing window size, default 5 points.
+        平滑窗口大小，默认 5 点。
 
-    Returns
-    -------
+    返回
+    ------
     dict
-        Contains mean, std, median, p10, p90, frac_positive, frac_in_cross_enh
-        and other statistics.
+        包含 mean, std, median, p10, p90, frac_positive, frac_in_cross_enh
+        等统计量。
     """
     sigma = compute_sigma_width(s_m, B_m, smooth_window)
     valid = sigma[np.isfinite(sigma)]
@@ -311,7 +310,7 @@ def compute_sigma_width_stats(
         "p10": float(np.percentile(valid, 10)),
         "p90": float(np.percentile(valid, 90)),
         "frac_positive": float(np.sum(valid > 0) / len(valid)),
-        # Fraction of points with small positive sigma_width (gradual widening),
+        # Fraction of points with small positive σ_width (gradual widening),
         # indicative of bar-bend cross-enhancement regime.
         # Threshold O(0.1) used as a conservative upper bound.
         "frac_in_cross_enh": float(
@@ -322,7 +321,7 @@ def compute_sigma_width_stats(
 
 
 # =====================================================================
-# Comprehensive diagnostics
+# 综合诊断
 # =====================================================================
 
 def diagnose_bar_regime(
@@ -332,36 +331,35 @@ def diagnose_bar_regime(
     nu_curvature: float = 0.0,
     D_m: float | None = None,
     B_m_phys: float | None = None,
-    alpha_range: Tuple[float, float] = (0.01, 15.0),
+    alpha_range: tuple[float, float] = (0.01, 15.0),
     n_alpha: int = 200,
     **kwargs,
 ) -> BarDiagnostic:
-    """Comprehensive bar mode diagnostics: Crosato-Mosselman + OS unstable window.
+    """综合砂洲模态诊断：Crosato-Mosselman + OS 不稳定窗口。
 
-    Parameters
-    ----------
+    参数
+    ------
     beta : float
-        Aspect ratio B / H.
+        宽深比 B / H。
     Fr : float
-        Froude number.
+        Froude 数。
     Cf : float
-        Friction coefficient.
+        摩阻系数。
     nu_curvature : float
-        Curvature parameter H/R.
+        曲率参数 H/R。
     D_m : float or None
-        Physical water depth (m).
+        物理水深（米）。
     B_m_phys : float or None
-        Physical channel width (m), for wavelength-to-meter conversion.
-        If None, inferred from beta * 2 * D_m.
-    alpha_range : Tuple
-        Wavenumber sweep range.
+        物理河宽（米），用于波长换算到米。若为 None 则从 beta * 2 * D_m 推算。
+    alpha_range : tuple
+        波数扫描范围。
     n_alpha : int
-        Number of wavenumber samples.
+        波数采样点数。
     **kwargs
-        Other parameters passed to diagnose_stability.
+        传递给 diagnose_stability 的其他参数。
 
-    Returns
-    -------
+    返回
+    ------
     BarDiagnostic
     """
     # 1. Crosato-Mosselman bar mode prediction
@@ -384,7 +382,12 @@ def diagnose_bar_regime(
     sr = asw.stability_result
 
     # 3. Convert wavelengths to meters
-    #    λ(physical) = λ(non-dim) × D_m = (2π/α) × D_m
+    #    λ(dimensional) = λ(non-dim) × D_m = (2π/α) × D_m
+    #    But OS non-dimensionalization uses half-width h = D as length scale,
+    #    so λ_m = (2π/α) × D_m
+    #    Alternatively, using full width: λ_m = (2π/α) × (B/2) = (2π/α) × β × D_m
+    #    The OS uses D (depth) as scale, so λ in OS = 2π/α × D
+    #    Physical wavelength: λ_phys = λ_OS × D_m
     if D_m is not None:
         lambda_crit_m = (2.0 * np.pi / sr.alpha_crit * D_m
                          if sr.alpha_crit > 0 else np.inf)
@@ -418,6 +421,110 @@ def diagnose_bar_regime(
     )
 
 
+
+
+# =====================================================================
+# 批量 σ_width 诊断（读取干流 trunk CSV）
+# =====================================================================
+
+def run_sigma_width_batch(
+    trunk_dir: str | Path,
+    pattern: str = "*_trunk_0.csv",
+    smooth_window: int = 5,
+    output_csv: str | Path | None = None,
+) -> list[dict]:
+    """  对 trunk 目录下所有年份的主河道 B(s) 批量计算 σ_width 统计量。
+
+    参数
+    ------
+    trunk_dir : str or Path
+        trunk CSV 目录。
+    pattern : str
+        文件名匹配模式，默认 "*_trunk_0.csv"。
+    smooth_window : int
+        平滑窗口大小。
+    output_csv : str or Path or None
+        若提供，保存结果到 CSV。
+
+    返回
+    ------
+    list[dict]
+        每年一行，包含 year, n_points, B_mean, σ_width 统计量。
+    """
+    import csv as _csv
+    import re
+
+    trunk_dir = Path(trunk_dir)
+    if not trunk_dir.exists():
+        raise FileNotFoundError(f"Trunk directory not found: {trunk_dir}")
+
+    files = sorted(trunk_dir.glob(pattern))
+    if not files:
+        raise FileNotFoundError(
+            f"No trunk files matching '{pattern}' in {trunk_dir}"
+        )
+
+    all_results: list[dict] = []
+
+    for fpath in files:
+        # Extract year from filename like 'Gaocun-Sunkou_2016_trunk_0.csv'
+        match = re.search(r'(\d{4})', fpath.stem)
+        year = match.group(1) if match else fpath.stem
+
+        # Read CSV
+        s_list, B_list = [], []
+        with open(fpath, "r", encoding="utf-8") as f:
+            reader = _csv.DictReader(f)
+            for row in reader:
+                try:
+                    s_val = float(row["s_m"])
+                    B_val = float(row["B_m"])
+                except (KeyError, ValueError):
+                    continue
+                s_list.append(s_val)
+                B_list.append(B_val)
+
+        if len(s_list) < 10:
+            print(f"  [SKIP] {year}: only {len(s_list)} points")
+            continue
+
+        s_arr = np.array(s_list)
+        B_arr = np.array(B_list)
+
+        stats = compute_sigma_width_stats(s_arr, B_arr, smooth_window)
+        row_out = {
+            "year": year,
+            "n_points": len(s_arr),
+            "trunk_length_km": float(s_arr[-1] - s_arr[0]) / 1000.0,
+            "B_mean_m": float(np.mean(B_arr)),
+            "B_std_m": float(np.std(B_arr)),
+            "sigma_mean": stats["mean"],
+            "sigma_std": stats["std"],
+            "sigma_median": stats["median"],
+            "sigma_p10": stats["p10"],
+            "sigma_p90": stats["p90"],
+            "frac_positive": stats["frac_positive"],
+            "frac_in_cross_enh": stats["frac_in_cross_enh"],
+        }
+        all_results.append(row_out)
+        print(
+            f"  {year}: n={len(s_arr):5d}, B_mean={row_out['B_mean_m']:.0f}m, "
+            f"sigma_mean={row_out['sigma_mean']:.6f}, "
+            f"frac_pos={row_out['frac_positive']:.1%}"
+        )
+
+    # Write CSV if requested
+    if output_csv is not None and all_results:
+        output_csv = Path(output_csv)
+        output_csv.parent.mkdir(parents=True, exist_ok=True)
+        fieldnames = list(all_results[0].keys())
+        with open(output_csv, "w", newline="", encoding="utf-8") as f:
+            writer = _csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(all_results)
+        print(f"\n  Saved {len(all_results)} rows to {output_csv}")
+
+    return all_results
 # =====================================================================
 # CLI demo
 # =====================================================================
@@ -469,7 +576,7 @@ def main():
     print(f"  unstable frac  = {diag2.n_unstable_frac:.1%}")
     print(f"  unstable lambda= [{diag2.lambda_unstable_min_m:.1f}, {diag2.lambda_unstable_max_m:.1f}] m")
 
-    # ── Sigma_width demo from synthetic data ──────────────────
+    # ── Sigma_width demo from sample trunk data ──────────────────
     print("\n--- sigma_width demo (synthetic widening channel) ---")
     s_demo = np.linspace(0, 10000, 201)  # 10 km, 50m spacing
     B_demo = 300.0 + 50.0 * np.sin(2 * np.pi * s_demo / 5000) + 0.01 * s_demo
@@ -480,6 +587,16 @@ def main():
     print(f"  sigma_width [p10, p90] = [{stats['p10']:.6f}, {stats['p90']:.6f}]")
     print(f"  frac_positive      = {stats['frac_positive']:.1%}")
     print(f"  frac_in_cross_enh  = {stats['frac_in_cross_enh']:.1%}")
+    # ── Batch sigma_width from real trunk data ───────────────────
+    print("\n--- Batch sigma_width from trunk data (2000-2023) ---")
+    trunk_dir = _PROJECT_ROOT / "results" / "trunks"
+    output_csv = _PROJECT_ROOT / "results" / "sigma_width_summary.csv"
+    if trunk_dir.exists():
+        run_sigma_width_batch(
+            trunk_dir, smooth_window=5, output_csv=output_csv,
+        )
+    else:
+        print(f"  [SKIP] Trunk directory not found: {trunk_dir}")
 
     print("\n" + "=" * 60)
     print("Demo complete.")
