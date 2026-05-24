@@ -17,7 +17,7 @@ def main():
         beta=beta,
         Fr=Fr,
         Cf=Cf,
-        N_cheb=64,           # Number of Chebyshev collocation points
+        N_cheb=20,           # Number of Chebyshev collocation points
         nu_curvature=0.0,    # Straight channel (nu = H/R = 0)
         profile_mode="zs_turbulent"
     )

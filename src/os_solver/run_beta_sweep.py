@@ -1,19 +1,19 @@
-"""Beta sweep 实验：在场尺度 β=5-300 下运行 OS 稳定性分析。
+"""Beta sweep experiment: Run planar 2D SWE-Exner stability sweep under field aspect ratios beta=5-300。
 
-用途
+Purpose
 ----
-从 Step 2.1 水力参数表中读取 2011-2021 近期均值作为基准场条件
-(β≈132, Fr≈0.257, Cf≈0.00176)，执行两类实验：
-  1. α-sweep：在固定 β 下扫描波数 α，找最不稳定模态
-  2. β-sweep：在多个 β 值下各做 α-sweep，汇总增长率随 β 的缩放关系
+ Step 2.1 ParametersRead 2011-2021 average values
+(β≈132, Fr≈0.257, Cf≈0.00176)，：
+  1. alpha-sweep: Sweep wavenumber alpha under fixed beta to find the most unstable mode
+  2. beta-sweep: Sweep alpha under multiple beta values, summarizing growth rate scaling with beta
 
-输出
+Output
 ----
   results/beta_sweep/alpha_sweep_field.csv
   results/beta_sweep/beta_sweep_summary.csv
   results/beta_sweep/convergence_N.csv
 
-运行
+Run
 ----
   python src/stability/run_beta_sweep.py
 """
@@ -46,38 +46,38 @@ from src.os_solver.os_operator_curved import solve_os_curved
 
 
 # =====================================================================
-# 工具函数
+# Utility functions
 # =====================================================================
 
 def find_most_unstable(eigvals: np.ndarray, c_mag_max: float = 50.0) -> dict:
-    """从本征值数组中找到增长率最大的物理模态（过滤虚假特征值）。
+    """Find physical mode with maximum growth rate from eigenvalues (filtering spurious eigenvalues)。
 
-    广义特征值问题 A*x = c*B*x 中 B 奇异时会产生数值无穷大的虚假
-    特征值。这里通过 |c| < c_mag_max 阈值过滤。
+    Generalized eigenvalue problem A*x = c*B*x with singular B produces singular
+    eigenvalues. These are filtered by the |c| < c_mag_max threshold.
 
     Parameters
     ----------
     eigvals : 1-D complex array
-        本征值 c = c_r + i*c_i，其中 c_i > 0 表示不稳定。
+         c = c_r + i*c_i， c_i > 0 。
     c_mag_max : float
-        特征值模值上限，|c| 超过此值视为虚假模态。默认 50。
+        Eigenvalue magnitude threshold; |c| above this is considered spurious。 50。
 
     Returns
     -------
     dict with keys: omega_i_max, omega_r, c_r, c_i, idx, n_spurious
     """
-    # 过滤掉 NaN 和 Inf
+    # Filter out NaN and Inf
     finite_mask = np.isfinite(eigvals)
     if not np.any(finite_mask):
         return {"omega_i_max": np.nan, "omega_r": np.nan,
                 "c_r": np.nan, "c_i": np.nan, "idx": -1, "n_spurious": 0}
 
-    # 进一步过滤虚假特征值：|c| < c_mag_max
+    # Further filter spurious eigenvalues：|c| < c_mag_max
     physical_mask = finite_mask & (np.abs(eigvals) < c_mag_max)
     n_spurious = int(np.sum(finite_mask) - np.sum(physical_mask))
 
     if not np.any(physical_mask):
-        # 所有有限特征值都是虚假的
+        # 
         return {"omega_i_max": np.nan, "omega_r": np.nan,
                 "c_r": np.nan, "c_i": np.nan, "idx": -1,
                 "n_spurious": n_spurious}
@@ -104,18 +104,18 @@ def run_single(
     N: int = 40,
     profile_mode: str = "zs_turbulent",
 ) -> dict:
-    """对单个 (alpha, beta, Fr, Cf) 组合运行 2D SWE-Exner 平面沙洲求解。"""
+    """Run 2D SWE-Exner planform bar solver for a single (alpha, beta, Fr, Cf) combination。"""
     from src.os_solver.solve_bar_stability import solve_bar_stability
     
-    # 动态计算 Shields 数 (基于黄河下游 fine sand d50 比例)
+    # Dynamically calculate Shields number (based on Lower Yellow River fine sand d50 proportion)
     theta_c = 0.04
     theta = Cf * (Fr ** 2) * 2.7e4
-    theta = max(theta, theta_c + 0.1) # 保证起动阈值以上
+    theta = max(theta, theta_c + 0.1) # Ensure above the incipient threshold
     
-    # 将标准 OS 波数 alpha_os (以 H 归一化) 转换为 2D SWE-Exner 波数 k (以 B 归一化)
+    # Convert standard OS wavenumber alpha_os (normalized by H) to 2D SWE-Exner wavenumber k (normalized by B)
     k_wavenumber = alpha * beta_val
     
-    # 调用 2D SWE-Exner 本征值求解器
+    # 2D SWE-Exner
     eigvals, eigvecs = solve_bar_stability(
         beta=beta_val,
         Cf=Cf,
@@ -127,7 +127,7 @@ def run_single(
         Gamma=4.0
     )
     
-    # 过滤 m=0 均匀变形模态和高相速度虚假特征值
+    # filter m=0
     physical_indices = []
     n_pts = N + 1
     v_slice = slice(1 * n_pts, 2 * n_pts)
@@ -135,7 +135,7 @@ def run_single(
         e = eigvals[idx_val]
         v_vec = eigvecs[v_slice, idx_val]
         c_r_val = float(-e.imag / max(1e-6, k_wavenumber))
-        # 过滤 max(abs(v)) < 1e-4 (m=0 均匀模态) 和 |c_r| > 2.0 (高相速度虚假特征值)
+        # filter max(abs(v)) < 1e-4 (m=0 ) |c_r| > 2.0 ()
         if np.max(np.abs(v_vec)) >= 1e-4 and np.abs(c_r_val) <= 2.0:
             physical_indices.append(idx_val)
             
@@ -182,16 +182,16 @@ def run_single_curved(
     U1_mode: str = "polynomial_zs",
     A_scour: float = 4.0,
 ) -> dict:
-    """对单个 (alpha, beta, Fr, Cf, nu) 组合运行含弯曲修正的 2D 浅水沙洲求解。"""
+    """Run 2D SWE-Exner solver with curvature correction for a single (alpha, beta, Fr, Cf, nu)。"""
     from src.os_solver.solve_bar_stability import solve_bar_stability
     
-    # 动态计算 Shields 数
+    # Shields
     theta_c = 0.04
     theta = Cf * (Fr ** 2) * 2.7e4
     theta = max(theta, theta_c + 0.1)
     
-    # 弯曲离心力减弱横向坡面重力修正（即降低 Gamma）从而促进沙洲增长（弯曲增强效应）
-    # 产品折叠关系：nu * beta_val (弯道参数) 决定折损程度
+    # Centrifugal force reduces lateral gravity slope stabilization (i.e. decreases Gamma) promoting bar growth
+    # ：nu * beta_val (bendParameters)
     Gamma_curved = max(1.0, 4.0 - nu_curvature * beta_val * 0.5)
     
     k_wavenumber = alpha * beta_val
@@ -207,7 +207,7 @@ def run_single_curved(
         Gamma=Gamma_curved
     )
     
-    # 过滤 m=0 均匀变形模态和高相速度虚假特征值
+    # filter m=0
     physical_indices = []
     n_pts = N + 1
     v_slice = slice(1 * n_pts, 2 * n_pts)
@@ -264,7 +264,7 @@ def alpha_sweep_curved(
     U1_mode: str = "polynomial_zs",
     A_scour: float = 4.0,
 ) -> list[dict]:
-    """在固定 (beta, Fr, Cf, nu) 下扫描波数 alpha（含曲率修正）。"""
+    """Sweep wavenumber alpha under fixed (beta, Fr, Cf, nu)（）。"""
     results = []
     for alpha in alpha_arr:
         info = run_single_curved(
@@ -286,7 +286,7 @@ def beta_nu_sweep(
     U1_mode: str = "polynomial_zs",
     A_scour: float = 4.0,
 ) -> list[dict]:
-    """对 (beta, nu) 网格做联合扫描，每个组合做 alpha-sweep 找最不稳定模态。"""
+    """ (beta, nu) ， alpha-sweep 。"""
     summary = []
     n_total = len(beta_arr) * len(nu_arr)
     count = 0
@@ -326,7 +326,7 @@ def alpha_sweep(
     N: int = 80,
     profile_mode: str = "zs_turbulent",
 ) -> list[dict]:
-    """在固定 (beta, Fr, Cf) 下扫描波数 alpha，返回每个 alpha 的结果。"""
+    """ (beta, Fr, Cf)  alpha，Returns alpha 。"""
     results = []
     for alpha in alpha_arr:
         info = run_single(alpha, beta_val, Fr, Cf, N, profile_mode)
@@ -342,11 +342,11 @@ def beta_sweep(
     N: int = 80,
     profile_mode: str = "zs_turbulent",
 ) -> list[dict]:
-    """对每个 beta 做 alpha-sweep，返回每个 beta 对应的最不稳定模态汇总。"""
+    """Perform alpha-sweep for each beta，Returns beta 。"""
     summary = []
     for beta_val in beta_arr:
         results = alpha_sweep(beta_val, Fr, Cf, alpha_arr, N, profile_mode)
-        # 找到整个 alpha-sweep 中增长率最大的（忽略 NaN）
+        # alpha-sweep （ NaN）
         best_idx = -1
         best_oi = -np.inf
         for i, r in enumerate(results):
@@ -374,7 +374,7 @@ def convergence_test(
     N_list: list[int],
     profile_mode: str = "zs_turbulent",
 ) -> list[dict]:
-    """对不同 Chebyshev 阶数 N 做收敛性测试。"""
+    """ Chebyshev  N 。"""
     results = []
     for N in N_list:
         info = run_single(alpha, beta_val, Fr, Cf, N, profile_mode)
@@ -384,7 +384,7 @@ def convergence_test(
 
 
 def save_csv(rows: list[dict], path: Path, fieldnames: list[str] | None = None):
-    """将结果列表写入 CSV。"""
+    """ CSV。"""
     if not rows:
         return
     if fieldnames is None:
@@ -399,7 +399,7 @@ def save_csv(rows: list[dict], path: Path, fieldnames: list[str] | None = None):
 
 
 def load_field_params(csv_path: Path) -> dict:
-    """从 hydraulic_params_timeseries.csv 读取 2011-2021 近期均值。"""
+    """ hydraulic_params_timeseries.csv Read 2011-2021 average values。"""
     import csv as _csv
     rows = []
     with open(csv_path, "r", encoding="utf-8") as f:
@@ -434,14 +434,14 @@ def load_field_params(csv_path: Path) -> dict:
 
 
 # =====================================================================
-# 主入口
+# 
 # =====================================================================
 
 def main():
     out_dir = _PROJECT_ROOT / "results" / "beta_sweep"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # ── 读取场参数 ─────────────────────────────────────────────────
+    # ── Parameters ─────────────────────────────────────────────────
     ts_csv = _PROJECT_ROOT / "results" / "hydraulic_params_timeseries.csv"
     if ts_csv.exists():
         fp = load_field_params(ts_csv)
@@ -451,7 +451,7 @@ def main():
         print(f"Field params from CSV (2011-2021 mean):")
         print(f"  beta={beta_field:.1f}  Fr={Fr_field:.4f}  Cf={Cf_field:.6f}")
     else:
-        # 备用硬编码值
+        # 
         beta_field = 132.0
         Fr_field = 0.257
         Cf_field = 0.00176
@@ -461,14 +461,14 @@ def main():
     print(f"  Re={Re_field:.0f}")
     print()
 
-    # ── 参数配置 ───────────────────────────────────────────────────
+    # ── Parameters ───────────────────────────────────────────────────
     alpha_arr = np.linspace(0.05, 10.0, 50)
     beta_values = np.array([5, 10, 15, 20, 30, 50, 80, 100, 130, 150, 200, 250, 300],
                            dtype=float)
     N_values = [40, 60, 80, 100, 120, 160]
     profile_mode = "zs_turbulent"
 
-    # ── 实验 1: Chebyshev 收敛性测试 ──────────────────────────────
+    # ── Experiment 1: Chebyshev convergence test ──────────────────────────────
     print("=" * 60)
     print("Experiment 1: Chebyshev convergence test")
     print(f"  alpha=1.0  beta={beta_field:.1f}  profile={profile_mode}")
@@ -484,7 +484,7 @@ def main():
     save_csv(conv_results, out_dir / "convergence_N.csv")
     print()
 
-    # ── 实验 2: 场条件下的 alpha-sweep ────────────────────────────
+    # ── experiment 2: alpha-sweep ────────────────────────────
     print("=" * 60)
     print("Experiment 2: Alpha sweep at field conditions")
     print(f"  beta={beta_field:.1f}  Fr={Fr_field:.4f}  Cf={Cf_field:.6f}  N=20")
@@ -498,7 +498,7 @@ def main():
         profile_mode=profile_mode,
     )
     save_csv(alpha_results, out_dir / "alpha_sweep_field.csv")
-    # 找最不稳定的物理模态（跳过 NaN）
+    # （ NaN）
     oi_arr = np.array([r["omega_i_max"] for r in alpha_results])
     valid = np.isfinite(oi_arr)
     if np.any(valid):
@@ -509,7 +509,7 @@ def main():
         print("  WARNING: no physical eigenvalues found")
     print()
 
-    # ── 实验 3: 剖面模式对比 (laminar_ref vs zs_turbulent) ────────
+    # ── experiment 3: (laminar_ref vs zs_turbulent) ────────
     print("=" * 60)
     print("Experiment 3: Profile mode comparison (laminar_ref vs zs_turbulent)")
     print("=" * 60)
@@ -536,7 +536,7 @@ def main():
             print(f"  {pm:20s}  WARNING: no physical eigenvalues")
     print()
 
-    # ── 实验 4: Beta sweep ────────────────────────────────────────
+    # ── experiment 4: Beta sweep ────────────────────────────────────────
     print("=" * 60)
     print("Experiment 4: Beta sweep (lab -> field scale)")
     print(f"  beta = {list(beta_values)}")
@@ -555,11 +555,11 @@ def main():
     save_csv(beta_results, out_dir / "beta_sweep_summary.csv", fieldnames)
     print()
 
-    # ── 实验 5: 早期参数对比 (2000-2003) ──────────────────────────
+    # ── experiment 5: Parameterscomparison (2000-2003) ──────────────────────────
     print("=" * 60)
     print("Experiment 5: Early period (2000-2003) comparison")
     print("=" * 60)
-    # 早期硬编码值（来自 Step 2.1 结果）
+    # （ Step 2.1 ）
     beta_early = 253.0
     Fr_early = 0.448
     Cf_early = 0.00070

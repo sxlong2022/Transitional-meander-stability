@@ -1,9 +1,9 @@
-"""砂洲模态预测与诊断模块。
+"""Bar Mode Prediction and Diagnosis Module。
 
-结合 Crosato-Mosselman (2009) 经验公式、OS 不稳定波数窗口、
-以及沿程宽度梯度 σ_width 诊断，提供完整的砂洲模态预测框架。
+Combine Crosato-Mosselman (2009) empirical formula, 2D SWE-Exner instability window、
+and width gradient σ_width diagnosis, providing a complete bar mode prediction framework。
 
-典型用法::
+Typical usage::
 
     from src.bar_modes import predict_bar_mode_cm, compute_unstable_window
     m = predict_bar_mode_cm(beta=132.0, Cf=0.00176)
@@ -38,41 +38,41 @@ from src.utils.diagnose_stability import (  # noqa: E402
 
 
 # =====================================================================
-# 数据类
+# 
 # =====================================================================
 
 @dataclasses.dataclass
 class BarDiagnostic:
-    """砂洲模态综合诊断结果。
+    """。
 
-    属性
+    
     ------
     beta : float
-        宽深比 B / (2H)。
+         B / (2H)。
     Fr : float
-        Froude 数。
+        Froude number。
     Cf : float
-        摩阻系数。
+        。
     m_cm : int
-        Crosato-Mosselman 预测的砂洲排数 (bar mode number)。
+        Crosato-Mosselman  (bar mode number)。
     bar_regime : str
-        砂洲类型判断：single_row / multi_row / braided。
+        ：single_row / multi_row / braided。
     alpha_crit : float
-        OS 最不稳定波数。
+        OS 。
     omega_i_max : float
-        OS 最大增长率。
+        OS 。
     lambda_crit_m : float
-        OS 最不稳定波长（米）；需提供 D_m。
+        OS （）； D_m。
     alpha_unstable_min : float
-        不稳定波数范围下界。
+        。
     alpha_unstable_max : float
-        不稳定波数范围上界。
+        。
     n_unstable_frac : float
-        不稳定波数采样点占比。
+        。
     lambda_unstable_min_m : float
-        不稳定波长范围下界（米）。
+        （）。
     lambda_unstable_max_m : float
-        不稳定波长范围上界（米）。
+        （）。
     """
 
     beta: float
@@ -91,7 +91,7 @@ class BarDiagnostic:
 
 
 # =====================================================================
-# Crosato-Mosselman (2009) 砂洲排数预测
+# Crosato-Mosselman (2009)
 # =====================================================================
 
 def predict_bar_mode_cm(
@@ -100,37 +100,37 @@ def predict_bar_mode_cm(
     b_param: float = 1.7,
     sediment_exponent: float | None = None,
 ) -> int:
-    """Crosato-Mosselman (2009) 经验公式预测砂洲排数。
+    """Crosato-Mosselman (2009) 。
 
-    简化公式::
+    ::
 
         m = round( (2 * beta) / (b * pi) )
 
-    其中 b ≈ 1.7 (Crosato & Mosselman 2009, Table 1 推荐值)。
-    当提供 sediment_exponent 时使用完整公式::
+     b ≈ 1.7 (Crosato & Mosselman 2009, Table 1 )。
+     sediment_exponent ::
 
         m = round( (beta / pi) * sqrt(Cf / epsilon) )
 
-    参数
+    Parameters
     ------
     beta : float
-        宽深比 B / H。
+         B / H。
     Cf : float
-        摩阻系数（用于完整公式）。
+        （）。
     b_param : float
-        简化公式中的经验常数 b，默认 1.7。
+         b， 1.7。
     sediment_exponent : float or None
-        输沙公式中的指数参数 ε。若为 None 则使用简化公式。
+        Parameters ε。 None 。
 
-    返回
+    Returns
     ------
     int
-        预测砂洲排数 m（≥1）。
+         m（≥1）。
 
-    注记
+    
     ------
-    对于高 β（如 β > 100），m 值很大（多排砂洲/辫状），
-    这与黄河下游历史辫状特征一致。
+     β（ β > 100），m （/），
+    。
     """
     if beta <= 0:
         raise ValueError(f"beta must be positive, got {beta}")
@@ -148,7 +148,7 @@ def predict_bar_mode_cm(
 
 
 # =====================================================================
-# OS 不稳定波数窗口
+# OS
 # =====================================================================
 
 def compute_unstable_window(
@@ -161,31 +161,31 @@ def compute_unstable_window(
     D_m: float | None = None,
     **kwargs,
 ) -> AlphaSweepResult:
-    """计算 OS 不稳定波数窗口（alpha-sweep 完整曲线）。
+    """ OS （alpha-sweep ）。
 
-    参数
+    Parameters
     ------
     beta : float
-        宽深比。
+        。
     Fr : float
-        Froude 数。
+        Froude number。
     Cf : float
-        摩阻系数。
+        。
     nu_curvature : float
-        曲率参数 H/R，默认 0。
+        Parameters H/R， 0。
     alpha_range : tuple
-        波数扫描范围，默认 (0.01, 15.0)，比诊断模块更宽。
+        ， (0.01, 15.0)，。
     n_alpha : int
-        波数采样点数，默认 200（高分辨率）。
+        ， 200（）。
     D_m : float or None
-        物理水深（米），用于波长换算。
+        （），。
     **kwargs
-        传递给 diagnose_stability 的其他参数。
+         diagnose_stability Parameters。
 
-    返回
+    Returns
     ------
     AlphaSweepResult
-        包含完整 omega_i(alpha) 曲线和不稳定范围。
+         omega_i(alpha) 。
     """
     result = diagnose_stability(
         beta=beta,
@@ -202,7 +202,7 @@ def compute_unstable_window(
 
 
 # =====================================================================
-# 沿程宽度梯度 σ_width
+# σ_width
 # =====================================================================
 
 def compute_sigma_width(
@@ -210,29 +210,29 @@ def compute_sigma_width(
     B_m: np.ndarray,
     smooth_window: int = 0,
 ) -> np.ndarray:
-    """从沿程宽度剖面计算归一化宽度梯度 σ_width = (1/B) dB/ds。
+    """ σ_width = (1/B) dB/ds。
 
-    参数
+    Parameters
     ------
     s_m : np.ndarray
-        沿程距离坐标（米），单调递增。
+        （），。
     B_m : np.ndarray
-        沿程河宽（米），与 s_m 等长。
+        （）， s_m 。
     smooth_window : int
-        平滑窗口大小（0 = 不平滑）。若 > 0，先对 B_m 做
-        移动平均再求导。
+        （0 = ）。 > 0， B_m 
+        。
 
-    返回
+    Returns
     ------
     sigma_width : np.ndarray
-        归一化宽度梯度数组，与输入等长（端点用 forward/backward diff）。
+        ，（ forward/backward diff）。
 
-    注记
+    
     ------
-    σ_width > 0 表示展宽段，σ_width < 0 表示收缩段。
-    在宽度非均匀河段中，σ_width > 0 且量级较小（≪ O(0.1)）的区间
-    通常对应 bar–bend 交叉增强模式（γ_BA < 0），即宽度缓慢展宽
-    有利于弯道内沙洲的增长。具体阈值取决于 β 和 Cf。
+    σ_width > 0 ，σ_width < 0 。
+    ，σ_width > 0 （≪ O(0.1)）
+     bar–bend （γ_BA < 0），
+    。 β  Cf。
     """
     if len(s_m) != len(B_m):
         raise ValueError(
@@ -275,22 +275,22 @@ def compute_sigma_width_stats(
     B_m: np.ndarray,
     smooth_window: int = 5,
 ) -> dict:
-    """计算沿程 σ_width 的统计特征。
+    """ σ_width 。
 
-    参数
+    Parameters
     ------
     s_m : np.ndarray
-        沿程距离（米）。
+        （）。
     B_m : np.ndarray
-        沿程河宽（米）。
+        （）。
     smooth_window : int
-        平滑窗口大小，默认 5 点。
+        ， 5 。
 
-    返回
+    Returns
     ------
     dict
-        包含 mean, std, median, p10, p90, frac_positive, frac_in_cross_enh
-        等统计量。
+         mean, std, median, p10, p90, frac_positive, frac_in_cross_enh
+        。
     """
     sigma = compute_sigma_width(s_m, B_m, smooth_window)
     valid = sigma[np.isfinite(sigma)]
@@ -321,7 +321,7 @@ def compute_sigma_width_stats(
 
 
 # =====================================================================
-# 综合诊断
+# 
 # =====================================================================
 
 def diagnose_bar_regime(
@@ -335,30 +335,30 @@ def diagnose_bar_regime(
     n_alpha: int = 200,
     **kwargs,
 ) -> BarDiagnostic:
-    """综合砂洲模态诊断：Crosato-Mosselman + OS 不稳定窗口。
+    """：Crosato-Mosselman + OS 。
 
-    参数
+    Parameters
     ------
     beta : float
-        宽深比 B / H。
+         B / H。
     Fr : float
-        Froude 数。
+        Froude number。
     Cf : float
-        摩阻系数。
+        。
     nu_curvature : float
-        曲率参数 H/R。
+        Parameters H/R。
     D_m : float or None
-        物理水深（米）。
+        （）。
     B_m_phys : float or None
-        物理河宽（米），用于波长换算到米。若为 None 则从 beta * 2 * D_m 推算。
+        （），。 None  beta * 2 * D_m 。
     alpha_range : tuple
-        波数扫描范围。
+        。
     n_alpha : int
-        波数采样点数。
+        。
     **kwargs
-        传递给 diagnose_stability 的其他参数。
+         diagnose_stability Parameters。
 
-    返回
+    Returns
     ------
     BarDiagnostic
     """
@@ -424,7 +424,7 @@ def diagnose_bar_regime(
 
 
 # =====================================================================
-# 批量 σ_width 诊断（读取干流 trunk CSV）
+# σ_width （ trunk CSV）
 # =====================================================================
 
 def run_sigma_width_batch(
@@ -433,23 +433,23 @@ def run_sigma_width_batch(
     smooth_window: int = 5,
     output_csv: str | Path | None = None,
 ) -> list[dict]:
-    """  对 trunk 目录下所有年份的主河道 B(s) 批量计算 σ_width 统计量。
+    """   trunk  B(s)  σ_width 。
 
-    参数
+    Parameters
     ------
     trunk_dir : str or Path
-        trunk CSV 目录。
+        trunk CSV 。
     pattern : str
-        文件名匹配模式，默认 "*_trunk_0.csv"。
+        ， "*_trunk_0.csv"。
     smooth_window : int
-        平滑窗口大小。
+        。
     output_csv : str or Path or None
-        若提供，保存结果到 CSV。
+        ， CSV。
 
-    返回
+    Returns
     ------
     list[dict]
-        每年一行，包含 year, n_points, B_mean, σ_width 统计量。
+        ， year, n_points, B_mean, σ_width 。
     """
     import csv as _csv
     import re
