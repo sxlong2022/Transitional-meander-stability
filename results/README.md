@@ -1,7 +1,7 @@
 # Results & Versioned Datasets
 
 This directory contains the versioned data tables, stability calculation results, and remote sensing time series used in the manuscript:
-> **"Planar 2D SWE--Exner stability of alternate bars in the transitional Lower Yellow River"**  
+> **"Planar 2D shallow-water--Exner stability diagnosis of bar formation in the transitional Lower Yellow River"**  
 > *Earth Surface Processes and Landforms* (ESPL).
 
 ---

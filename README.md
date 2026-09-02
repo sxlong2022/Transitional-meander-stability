@@ -1,4 +1,4 @@
-# Planar 2D SWE--Exner Stability of Alternate Bars in Transitional Rivers
+# Planar 2D Shallow-Water--Exner Stability Diagnosis of Bar Formation in Transitional Rivers
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
@@ -6,7 +6,7 @@
 [![Status: Peer-Reviewed Revision](https://img.shields.io/badge/Manuscript-ESPL%20Revision-brightgreen.svg)](https://onlinelibrary.wiley.com/journal/10969837)
 
 Official computational repository and reproducible data archive for the manuscript:
-> **"Planar 2D SWE--Exner stability of alternate bars in the transitional Lower Yellow River"**  
+> **"Planar 2D shallow-water--Exner stability diagnosis of bar formation in the transitional Lower Yellow River"**  
 > *Earth Surface Processes and Landforms* (ESPL).
 
 ---
@@ -271,7 +271,7 @@ If you use this code, data, or theoretical framework in your research, please ci
 ```bibtex
 @article{Song2026ESPL,
   author    = {Song, Xiaolong and Xu, Haijue and Bai, Yuchuan},
-  title     = {Planar {2D} {SWE}--{Exner} stability of alternate bars in the transitional {Lower} {Yellow} {River}},
+  title     = {Planar {2D} shallow-water--{Exner} stability diagnosis of bar formation in the transitional {Lower} {Yellow} {River}},
   journal   = {Earth Surface Processes and Landforms},
   year      = {2026},
   doi       = {10.1002/esp.XXXX},
@@ -283,7 +283,7 @@ Permanent archival record:
 ```bibtex
 @misc{Song2026Zenodo,
   author    = {Song, Xiaolong and Xu, Haijue and Bai, Yuchuan},
-  title     = {Planar {2D} {SWE}--{Exner} Stability of Alternate Bars in Transitional Rivers: Software and Data Archive},
+  title     = {Planar {2D} Shallow-Water--{Exner} Stability Diagnosis of Bar Formation in Transitional Rivers: Software and Data Archive},
   year      = {2026},
   publisher = {Zenodo},
   version   = {v1.0.0},

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "transitional-meander-stability"
 version = "1.0.0"
-description = "Planar 2D SWE--Exner morphodynamic linear stability solver and remote sensing analysis for transitional meandering rivers"
+description = "Planar 2D shallow-water--Exner stability diagnosis of bar formation and remote sensing analysis for transitional meandering rivers"
 readme = "README.md"
 authors = [
   { name = "Xiaolong Song", email = "xlsong@tju.edu.cn" },
