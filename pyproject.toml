@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transitional-meander-stability"
+version = "1.0.0"
+description = "Planar 2D SWE--Exner morphodynamic linear stability solver and remote sensing analysis for transitional meandering rivers"
+readme = "README.md"
+authors = [
+  { name = "Xiaolong Song", email = "xlsong@tju.edu.cn" },
+  { name = "Haijue Xu" },
+  { name = "Yuchuan Bai" }
+]
+license = { text = "MIT" }
+requires-python = ">=3.9"
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Hydrology",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+  "numpy>=1.20.0",
+  "scipy>=1.7.0",
+  "matplotlib>=3.4.0",
+  "pandas>=1.3.0",
+  "networkx>=2.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/sxlong2022/Transitional-meander-stability"
+Documentation = "https://github.com/sxlong2022/Transitional-meander-stability#readme"
+Repository = "https://github.com/sxlong2022/Transitional-meander-stability.git"
+"Zenodo Archive" = "https://doi.org/10.5281/zenodo.20361365"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "publication_figures*", "examples*"]

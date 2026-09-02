@@ -1,0 +1,7 @@
+bend_scale,radius_R_m,nu,nu_beta,sigma_r_max,k_max,E_pct
+Gentle curvature (P90),3000.0,0.00117,0.154,0.25,3.522,0.002
+Upper quartile (Q75),1845.0,0.0019,0.251,0.25,3.522,0.004
+Reach reference (Williams 1986),1500.0,0.00233,0.309,0.25001,3.522,0.007
+Median bend (Q50),1074.0,0.00326,0.431,0.25002,3.522,0.013
+Lower quartile (Q25),531.6,0.00658,0.871,0.25012,3.522,0.053
+Sharp bend apex (P10),400.0,0.00875,1.157,0.25022,3.522,0.094
