@@ -62,11 +62,14 @@ $$
 i k \gamma_u \hat{u} + \frac{\partial \hat{v}}{\partial n} - f_{\mathrm{sec}} \nu \frac{\partial \hat{u}}{\partial n} - \Gamma_\beta \frac{\partial^2 \hat{z}_b}{\partial n^2} = -\sigma \hat{z}_b
 $$
 
-**Boundary Conditions:** At lateral walls ($n = \pm 1/2$), impermeable banks enforce zero lateral flow and zero lateral bedload transport:
+**5. Boundary Conditions:**
+
+At lateral walls ($n = \pm 1/2$), impermeable banks enforce zero lateral flow and zero lateral bedload transport:
 
 $$
 \hat{v}\left(\pm \frac{1}{2}\right) = 0, \quad \left.\frac{\partial \hat{z}_b}{\partial n}\right|_{n = \pm 1/2} = 0
 $$
+
 ---
 
 ## 🗂️ Repository Structure
