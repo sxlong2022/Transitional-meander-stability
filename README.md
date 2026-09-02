@@ -37,18 +37,36 @@ where $\hat{\mathbf{q}} = [\hat{u}, \hat{v}, \hat{h}, \hat{z}_b]^T$ represents t
 - $k = 2\pi B / \lambda$ is the **dimensionless longitudinal wavenumber**.
 
 ### Dimensionless Governing Equations
-1. **Flow Continuity:**
-   $$i k \hat{u} + \frac{\mathrm{d}\hat{v}}{\mathrm{d}n} + i k \hat{h} = -\sigma \hat{h}$$
-2. **Streamwise Momentum:**
-   $$\left(i k + 2 \beta C_f\right)\hat{u} + \left(\frac{i k}{\mathrm{Fr}^2} - \beta C_f\right)\hat{h} + \frac{i k}{\mathrm{Fr}^2}\hat{z}_b = -\sigma \hat{u}$$
-3. **Transverse Momentum:**
-   $$\left(i k + \beta C_f\right)\hat{v} + \frac{1}{\mathrm{Fr}^2}\frac{\mathrm{d}\hat{h}}{\mathrm{d}n} + \frac{1}{\mathrm{Fr}^2}\frac{\mathrm{d}\hat{z}_b}{\mathrm{d}n} - \nu \hat{u} = -\sigma \hat{v}$$
-4. **Exner Sediment Continuity:**
-   $$i k \gamma_u \hat{u} + \frac{\mathrm{d}\hat{v}}{\mathrm{d}n} - f_{\mathrm{sec}} \nu \frac{\mathrm{d}\hat{u}}{\mathrm{d}n} - \Gamma_\beta \frac{\mathrm{d}^2 \hat{z}_b}{\mathrm{d}n^2} = -\sigma \hat{z}_b$$
+
+**1. Flow Continuity:**
+
+$$
+i k \hat{u} + \frac{\partial \hat{v}}{\partial n} + i k \hat{h} = -\sigma \hat{h}
+$$
+
+**2. Streamwise Momentum:**
+
+$$
+\left(i k + 2 \beta C_f\right)\hat{u} + \left(\frac{i k}{\mathrm{Fr}^2} - \beta C_f\right)\hat{h} + \frac{i k}{\mathrm{Fr}^2}\hat{z}_b = -\sigma \hat{u}
+$$
+
+**3. Transverse Momentum:**
+
+$$
+\left(i k + \beta C_f\right)\hat{v} + \frac{1}{\mathrm{Fr}^2}\frac{\partial \hat{h}}{\partial n} + \frac{1}{\mathrm{Fr}^2}\frac{\partial \hat{z}_b}{\partial n} - \nu \hat{u} = -\sigma \hat{v}
+$$
+
+**4. Exner Sediment Continuity:**
+
+$$
+i k \gamma_u \hat{u} + \frac{\partial \hat{v}}{\partial n} - f_{\mathrm{sec}} \nu \frac{\partial \hat{u}}{\partial n} - \Gamma_\beta \frac{\partial^2 \hat{z}_b}{\partial n^2} = -\sigma \hat{z}_b
+$$
 
 **Boundary Conditions:** At lateral walls ($n = \pm 1/2$), impermeable banks enforce zero lateral flow and zero lateral bedload transport:
-$$\hat{v}(\pm 1/2) = 0, \quad \left.\frac{\mathrm{d}\hat{z}_b}{\mathrm{d}n}\right|_{n = \pm 1/2} = 0$$
 
+$$
+\hat{v}\left(\pm \frac{1}{2}\right) = 0, \quad \left.\frac{\partial \hat{z}_b}{\partial n}\right|_{n = \pm 1/2} = 0
+$$
 ---
 
 ## 🗂️ Repository Structure
