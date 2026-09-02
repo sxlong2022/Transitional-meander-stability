@@ -36,7 +36,7 @@ dependencies = [
 Homepage = "https://github.com/sxlong2022/Transitional-meander-stability"
 Documentation = "https://github.com/sxlong2022/Transitional-meander-stability#readme"
 Repository = "https://github.com/sxlong2022/Transitional-meander-stability.git"
-"Zenodo Archive" = "https://doi.org/10.5281/zenodo.20361365"
+"Zenodo Archive" = "https://doi.org/10.5281/zenodo.22245579"
 
 [tool.setuptools.packages.find]
 where = ["."]
