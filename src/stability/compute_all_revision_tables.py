@@ -1,16 +1,14 @@
-"""Batch compute and update all tables for ESPL revision.
+"""Batch compute and update all theoretical tables for ESPL revision.
 
 Computes and saves to CSV:
 1. Temporal stability Table 3 (14 years) -> results/temporal_stability_2d.csv
 2. Spatial stability Table 4 (26 sections) -> results/spatial_2016_stability_2d.csv
-3. SI Table S1: Chebyshev Grid Convergence -> results/table_s1_convergence.csv
-4. SI Table S2: Benchmark against Colombini et al. (1987) / Tubino et al. (1999) -> results/table_s2_benchmark.csv
-5. SI Table S3: Sediment Transport Closure Sensitivity -> results/table_s3_sediment_sensitivity.csv
-6. SI Table S4: Three-Dimensional Parameter Space (Cf, Fr, beta) -> results/table_s4_multi_beta.csv
-7. SI Table S5: Transverse Mode Competition (m=1,2,3,4) -> results/table_s5_mode_competition.csv
-8. SI Table S6: Observational Landsat Scene Statistics -> results/table_s6_scenes.csv
-9. SI Table S7: Curvature Smoothing & Spectral Sensitivity -> results/table_s7_spectral_sensitivity.csv
-10. SI Table S8: Multi-Decadal Width Gradient Distributions -> results/table_s8_width_gradient.csv
+3. SI Table S1: Sediment Transport Closure Sensitivity -> results/table_s1_sediment_sensitivity.csv
+4. SI Table S2: Chebyshev Grid Convergence -> results/table_s2_convergence.csv
+5. SI Table S3: Benchmark against Colombini et al. (1987) / Tubino et al. (1999) -> results/table_s3_benchmark.csv
+6. SI Table S4: Satellite Per-Bend Curvature Sensitivity -> results/table_s4_curvature_sensitivity.csv
+7. SI Table S8: Three-Dimensional Parameter Space (Cf, Fr, beta) -> results/table_s8_multi_beta.csv
+8. SI Table S9: Transverse Mode Competition (m=1,2,3,4) -> results/table_s9_mode_competition.csv
 """
 from __future__ import annotations
 
@@ -32,7 +30,7 @@ RESULTS_DIR = PROJECT_ROOT / "results"
 def compute_temporal_stability() -> pd.DataFrame:
     """Compute temporal stability for 14 years with exact curved eigenvalue solve."""
     print("\n" + "=" * 60)
-    print("1. COMPUTING TEMPORAL STABILITY (14 YEARS)")
+    print("1. COMPUTING TEMPORAL STABILITY (14 YEARS, TABLE 3)")
     print("=" * 60)
 
     csv_path = RESULTS_DIR / "hydraulic_params_timeseries.csv"
@@ -57,6 +55,16 @@ def compute_temporal_stability() -> pd.DataFrame:
         nu_b = b / R_curv
 
         # Exact straight and curved eigenvalue solve
+        res_str = find_most_amplified_mode(
+            beta=beta,
+            Cf=cf,
+            Fr=fr,
+            theta=th,
+            theta_c=0.047,
+            nu=0.0,
+            k_bounds=(0.10, 20.00),
+            N_cheb=36,
+        )
         res_curv = compute_curvature_modulation_exact(
             beta=beta,
             Cf=cf,
@@ -68,27 +76,25 @@ def compute_temporal_stability() -> pd.DataFrame:
             N_cheb=36,
         )
 
-        sig = res_curv["sigma_r_straight"]
-        km = res_curv["k_max_straight"]
-        alph = km / beta if np.isfinite(km) else np.nan
-        lam = 2.0 * np.pi * b / km if np.isfinite(km) else np.nan
-        c_migr = float(res_curv.get("c_migr", np.nan))
+        sig = res_str["sigma_r_max"]
+        km = res_str["k_max"]
+        alph = res_str["alpha_max"]
+        cm = res_str["c_migr"]
+        lam = res_str["lambda_max_m"]
         E_pct = res_curv["E_pct"]
 
         records.append({
             "year": y,
             "beta": round(beta, 1),
+            "Cf": cf,
             "Fr": round(fr, 3),
-            "Cf": round(cf, 5),
-            "theta": round(th, 1),
-            "H_m": round(h, 2),
-            "B_m": round(b, 1),
-            "sigma_r_max": round(sig, 4),
-            "k_max": round(km, 2),
-            "alpha_max": round(alph, 4),
-            "lambda_max_m": round(lam, 1),
-            "c_migr": round(c_migr, 3),
-            "E_pct": round(E_pct, 1),
+            "Shields": round(th, 3),
+            "sigma_r_max": round(sig, 4) if np.isfinite(sig) else np.nan,
+            "k_max": round(km, 3) if (np.isfinite(km) and sig > 0) else np.nan,
+            "alpha_max": round(alph, 4) if (np.isfinite(alph) and sig > 0) else np.nan,
+            "c_migr": round(cm, 3) if (np.isfinite(cm) and sig > 0) else np.nan,
+            "lambda_max_m": round(lam, 0) if (np.isfinite(lam) and sig > 0) else np.nan,
+            "E_pct": round(E_pct, 1) if (np.isfinite(E_pct) and sig > 0) else np.nan,
             "nu_beta": round(nu_b, 2),
         })
 
@@ -96,14 +102,14 @@ def compute_temporal_stability() -> pd.DataFrame:
     out_csv = RESULTS_DIR / "temporal_stability_2d.csv"
     df_out.to_csv(out_csv, index=False)
     print(f"Saved to {out_csv}")
-    print(df_out[["year", "beta", "sigma_r_max", "k_max", "alpha_max", "lambda_max_m", "c_migr", "E_pct"]].to_string(index=False))
+    print(df_out.to_string(index=False))
     return df_out
 
 
 def compute_spatial_stability() -> pd.DataFrame:
-    """Compute spatial stability for 26 cross-sections in 2016."""
+    """Compute spatial stability along 2016 reach for 26 cross-sections."""
     print("\n" + "=" * 60)
-    print("2. COMPUTING SPATIAL STABILITY (26 SECTIONS IN 2016)")
+    print("2. COMPUTING SPATIAL STABILITY (2016 REACH, 26 SECTIONS, TABLE 4)")
     print("=" * 60)
 
     csv_path = RESULTS_DIR / "hydraulic_params_spatial_2016.csv"
@@ -111,6 +117,7 @@ def compute_spatial_stability() -> pd.DataFrame:
 
     records = []
     for _, row in df_sp.iterrows():
+        sec = row["section"]
         dam_km = float(row["dam_km"])
         beta = float(row["beta"])
         cf = float(row["Cf_energy"])
@@ -119,9 +126,21 @@ def compute_spatial_stability() -> pd.DataFrame:
         h = float(row["H_m"])
         b = float(row["B_m"])
 
+        # Curvature radius from channel centerline geometry
+        # Default ~ 1500 m or scaled by bend radius
         R_curv = 1500.0
         nu = h / R_curv
 
+        res_str = find_most_amplified_mode(
+            beta=beta,
+            Cf=cf,
+            Fr=fr,
+            theta=th,
+            theta_c=0.047,
+            nu=0.0,
+            k_bounds=(0.10, 20.00),
+            N_cheb=36,
+        )
         res_curv = compute_curvature_modulation_exact(
             beta=beta,
             Cf=cf,
@@ -133,20 +152,24 @@ def compute_spatial_stability() -> pd.DataFrame:
             N_cheb=36,
         )
 
-        sig = res_curv["sigma_r_straight"]
-        km = res_curv["k_max_straight"]
-        alph = km / beta if (np.isfinite(km) and sig > 0) else np.nan
-        lam = 2.0 * np.pi * b / km if (np.isfinite(km) and sig > 0) else np.nan
-        E_pct = res_curv["E_pct"] if sig > 0 else np.nan
+        sig = res_str["sigma_r_max"]
+        km = res_str["k_max"]
+        alph = res_str["alpha_max"]
+        cm = res_str["c_migr"]
+        lam = res_str["lambda_max_m"]
+        E_pct = res_curv["E_pct"]
 
         records.append({
+            "section": sec,
             "dam_km": round(dam_km, 1),
             "beta": round(beta, 1),
-            "Fr": round(fr, 2),
-            "Cf_energy": round(cf, 5),
-            "sigma_r_max": round(sig, 3),
-            "k_max": round(km, 2) if (np.isfinite(km) and sig > 0) else np.nan,
+            "Cf": cf,
+            "Fr": round(fr, 3),
+            "Shields": round(th, 3),
+            "sigma_r_max": round(sig, 4) if np.isfinite(sig) else np.nan,
+            "k_max": round(km, 3) if (np.isfinite(km) and sig > 0) else np.nan,
             "alpha_max": round(alph, 4) if (np.isfinite(alph) and sig > 0) else np.nan,
+            "c_migr": round(cm, 3) if (np.isfinite(cm) and sig > 0) else np.nan,
             "lambda_max_m": round(lam, 0) if (np.isfinite(lam) and sig > 0) else np.nan,
             "E_pct": round(E_pct, 1) if (np.isfinite(E_pct) and sig > 0) else np.nan,
             "nu_beta": round(nu * beta, 2),
@@ -160,62 +183,10 @@ def compute_spatial_stability() -> pd.DataFrame:
     return df_out
 
 
-def compute_benchmarks() -> None:
-    """Compute grid convergence (Table S1) and literature benchmarks (Table S2)."""
+def compute_table_s1_sediment_sensitivity() -> pd.DataFrame:
+    """Compute Table S1: Sediment closure sensitivity."""
     print("\n" + "=" * 60)
-    print("3. COMPUTING CHEBYSHEV CONVERGENCE (S1) & BENCHMARK (S2)")
-    print("=" * 60)
-
-    # Convergence test for beta=130, Cf=0.003, Fr=0.35, theta=2.5, k=3.5
-    s1_records = []
-    for N in [16, 24, 32, 36, 40, 48, 64]:
-        evs, _ = solve_bar_stability(130.0, 0.003, 0.35, 2.5, 0.047, k_wavenumber=3.5, N_cheb=N)
-        if len(evs) > 0:
-            sig_r = float(evs[0].real)
-            sig_i = float(evs[0].imag)
-            c_m = float(-sig_i / 3.5)
-            s1_records.append({"N": N, "sigma_r": sig_r, "sigma_i": sig_i, "c_migr": c_m})
-            print(f"N = {N:2d}: sigma = {sig_r:.8f} + {sig_i:.8f}i, c_migr = {c_m:.8f}")
-
-    pd.DataFrame(s1_records).to_csv(RESULTS_DIR / "table_s1_convergence.csv", index=False)
-
-    # Benchmark against Colombini et al. (1987) / Tubino et al. (1999)
-    # Cf=0.005, Fr=0.40, theta=0.10, theta_c=0.047
-    s2_records = []
-    bench_data = {
-        10.0: (-0.0013, 16.33, 1.6326, 0.850),
-        15.0: (-0.0020, 19.74, 1.3160, 0.850),
-        20.0: (-0.0026, 19.98, 0.9988, 0.850),
-        30.0: (0.1000, 2.52, 0.0840, 0.685),
-        40.0: (0.1900, 2.44, 0.0610, 0.649),
-        50.0: (0.2510, 2.40, 0.0480, 0.622),
-    }
-    for b in [10.0, 15.0, 20.0, 30.0, 40.0, 50.0]:
-        res = find_most_amplified_mode(b, 0.005, 0.40, 0.10, 0.047, k_bounds=(0.10, 20.00), N_cheb=36)
-        sig = res["sigma_r_max"]
-        km = res["k_max"]
-        alph = res["alpha_max"]
-        cm = res["c_migr"]
-        ref_sig, ref_km, ref_alph, ref_cm = bench_data[b]
-        err_pct = abs(sig - ref_sig) / (abs(ref_sig) + 1e-4) * 100.0
-        s2_records.append({
-            "beta": b,
-            "sigma_r_solver": sig,
-            "k_max_solver": km,
-            "alpha_max_solver": alph,
-            "c_migr_solver": cm,
-            "sigma_r_ref": ref_sig,
-            "err_pct": err_pct,
-        })
-        print(f"beta = {b:4.1f}: sigma_r = {sig:+.4f}, k_max = {km:.2f}, alpha_max = {alph:.4f}, c_migr = {cm:.3f}")
-
-    pd.DataFrame(s2_records).to_csv(RESULTS_DIR / "table_s2_benchmark.csv", index=False)
-
-
-def compute_sediment_sensitivity() -> None:
-    """Compute Table S3: Sediment closure sensitivity."""
-    print("\n" + "=" * 60)
-    print("4. COMPUTING SEDIMENT TRANSPORT SENSITIVITY (TABLE S3)")
+    print("3. COMPUTING SEDIMENT TRANSPORT SENSITIVITY (TABLE S1)")
     print("=" * 60)
 
     b_base = 130.0
@@ -248,15 +219,132 @@ def compute_sediment_sensitivity() -> None:
         diff = (res["sigma_r_max"] - sig_base) / sig_base * 100.0 if (np.isfinite(sig_base) and abs(sig_base) > 1e-6) else np.nan
         records.append({"param": "Gamma", "value": gam, "sigma_r_max": res["sigma_r_max"], "k_max": res["k_max"], "c_migr": res["c_migr"], "diff_pct": diff})
 
-    df_s3 = pd.DataFrame(records)
-    df_s3.to_csv(RESULTS_DIR / "table_s3_sediment_sensitivity.csv", index=False)
-    print(df_s3.to_string(index=False))
+    df_s1 = pd.DataFrame(records)
+    df_s1.to_csv(RESULTS_DIR / "table_s1_sediment_sensitivity.csv", index=False)
+    print(df_s1.to_string(index=False))
+    return df_s1
 
 
-def compute_multi_beta_slices() -> None:
-    """Compute Table S4: 3D Parameter space slices."""
+def compute_table_s2_convergence() -> pd.DataFrame:
+    """Compute Chebyshev polynomial degree grid convergence (Table S2)."""
     print("\n" + "=" * 60)
-    print("5. COMPUTING MULTI-BETA SLICES (TABLE S4)")
+    print("4. COMPUTING CHEBYSHEV SPECTRAL CONVERGENCE (TABLE S2)")
+    print("=" * 60)
+
+    # Convergence test for beta=130, Cf=0.003, Fr=0.35, theta=2.5, k=3.5
+    s2_records = []
+    for N in [16, 24, 32, 36, 40, 48, 64]:
+        evs, _ = solve_bar_stability(130.0, 0.003, 0.35, 2.5, 0.047, k_wavenumber=3.5, N_cheb=N)
+        if len(evs) > 0:
+            sig_r = float(evs[0].real)
+            sig_i = float(evs[0].imag)
+            c_m = float(-sig_i / 3.5)
+            s2_records.append({"N": N, "sigma_r": sig_r, "sigma_i": sig_i, "c_migr": c_m})
+            print(f"N = {N:2d}: sigma = {sig_r:.8f} + {sig_i:.8f}i, c_migr = {c_m:.8f}")
+
+    df_s2 = pd.DataFrame(s2_records)
+    df_s2.to_csv(RESULTS_DIR / "table_s2_convergence.csv", index=False)
+    return df_s2
+
+
+def compute_table_s3_benchmark() -> pd.DataFrame:
+    """Compute literature benchmark against Colombini et al. (1987) / Tubino et al. (1999) (Table S3)."""
+    print("\n" + "=" * 60)
+    print("5. COMPUTING BENCHMARK COMPARISON (TABLE S3)")
+    print("=" * 60)
+
+    # Benchmark against Colombini et al. (1987) / Tubino et al. (1999)
+    # Cf=0.005, Fr=0.40, theta=0.10, theta_c=0.047
+    s3_records = []
+    bench_data = {
+        10.0: (-0.0013, 16.33, 1.6326, 0.850),
+        15.0: (-0.0020, 19.74, 1.3160, 0.850),
+        20.0: (-0.0026, 19.98, 0.9988, 0.850),
+        30.0: (0.1000, 2.52, 0.0840, 0.685),
+        40.0: (0.1900, 2.44, 0.0610, 0.649),
+        50.0: (0.2510, 2.40, 0.0480, 0.622),
+    }
+    for b in [10.0, 15.0, 20.0, 30.0, 40.0, 50.0]:
+        res = find_most_amplified_mode(b, 0.005, 0.40, 0.10, 0.047, k_bounds=(0.10, 20.00), N_cheb=36)
+        sig = res["sigma_r_max"]
+        km = res["k_max"]
+        alph = res["alpha_max"]
+        cm = res["c_migr"]
+        ref_sig, ref_km, ref_alph, ref_cm = bench_data[b]
+        err_pct = abs(sig - ref_sig) / (abs(ref_sig) + 1e-4) * 100.0
+        s3_records.append({
+            "beta": b,
+            "sigma_r_solver": sig,
+            "k_max_solver": km,
+            "alpha_max_solver": alph,
+            "c_migr_solver": cm,
+            "sigma_r_ref": ref_sig,
+            "err_pct": err_pct,
+        })
+        print(f"beta = {b:4.1f}: sigma_r = {sig:+.4f}, k_max = {km:.2f}, alpha_max = {alph:.4f}, c_migr = {cm:.3f}")
+
+    df_s3 = pd.DataFrame(s3_records)
+    df_s3.to_csv(RESULTS_DIR / "table_s3_benchmark.csv", index=False)
+    return df_s3
+
+
+def compute_table_s4_curvature_sensitivity() -> pd.DataFrame:
+    """Compute Table S4: Sensitivity to satellite-measured curvature."""
+    print("\n" + "=" * 60)
+    print("6. COMPUTING SATELLITE CURVATURE SENSITIVITY (TABLE S4)")
+    print("=" * 60)
+
+    # 2016 baseline reach conditions: beta=132.4, Cf=0.0017, Fr=0.261, theta=4.0, H=3.5 m, B=463.4 m
+    beta = 132.4
+    cf = 0.0017
+    fr = 0.261
+    theta = 4.0
+    H = 3.5
+    B = 463.4
+
+    scales = [
+        ("Gentle curvature (P90)", 3000.0),
+        ("Upper quartile (Q75)", 1845.0),
+        ("Reach reference (Williams 1986)", 1500.0),
+        ("Median bend (Q50)", 1074.0),
+        ("Lower quartile (Q25)", 531.6),
+        ("Sharp bend apex (P10)", 400.0),
+    ]
+
+    records = []
+    for label, R in scales:
+        nu = H / R
+        nu_b = B / R
+        res = compute_curvature_modulation_exact(
+            beta=beta,
+            Cf=cf,
+            Fr=fr,
+            theta=theta,
+            nu=nu,
+            theta_c=0.047,
+            k_bounds=(0.10, 20.00),
+            N_cheb=36,
+        )
+        records.append({
+            "bend_scale": label,
+            "radius_R_m": R,
+            "nu": round(nu, 5),
+            "nu_beta": round(nu_b, 3),
+            "sigma_r_max": round(res["sigma_r_curved"], 5),
+            "k_max": round(res["k_max_curved"], 3),
+            "E_pct": round(res["E_pct"], 3),
+        })
+
+    df_s4 = pd.DataFrame(records)
+    df_s4.to_csv(RESULTS_DIR / "table_s4_curvature_sensitivity.csv", index=False)
+    print(df_s4.to_string(index=False))
+    return df_s4
+
+
+def compute_table_s8_multi_beta() -> pd.DataFrame:
+    """Compute Table S8: 3D Parameter space slices."""
+    print("\n" + "=" * 60)
+    print("7. COMPUTING MULTI-BETA SLICES (TABLE S8)")
     print("=" * 60)
 
     records = []
@@ -272,15 +360,16 @@ def compute_multi_beta_slices() -> None:
                     "k_max": res["k_max"],
                 })
 
-    df_s4 = pd.DataFrame(records)
-    df_s4.to_csv(RESULTS_DIR / "table_s4_multi_beta.csv", index=False)
-    print(f"Saved {len(df_s4)} entries to table_s4_multi_beta.csv")
+    df_s8 = pd.DataFrame(records)
+    df_s8.to_csv(RESULTS_DIR / "table_s8_multi_beta.csv", index=False)
+    print(f"Saved {len(df_s8)} entries to table_s8_multi_beta.csv")
+    return df_s8
 
 
-def compute_modal_competition_table() -> None:
-    """Compute Table S5: Transverse mode competition."""
+def compute_table_s9_mode_competition() -> pd.DataFrame:
+    """Compute Table S9: Transverse mode competition."""
     print("\n" + "=" * 60)
-    print("6. COMPUTING TRANSVERSE MODE COMPETITION (TABLE S5)")
+    print("8. COMPUTING TRANSVERSE MODE COMPETITION (TABLE S9)")
     print("=" * 60)
 
     cases = [
@@ -302,20 +391,32 @@ def compute_modal_competition_table() -> None:
             row[f"cm_m{m}"] = res[m]["c_migr"]
         records.append(row)
 
-    df_s5 = pd.DataFrame(records)
-    df_s5.to_csv(RESULTS_DIR / "table_s5_mode_competition.csv", index=False)
-    print(df_s5.to_string(index=False))
+    df_s9 = pd.DataFrame(records)
+    df_s9.to_csv(RESULTS_DIR / "table_s9_mode_competition.csv", index=False)
+    print(df_s9.to_string(index=False))
+    return df_s9
+
+
+# Backwards compatibility aliases
+compute_sediment_sensitivity = compute_table_s1_sediment_sensitivity
+compute_benchmarks = lambda: (compute_table_s2_convergence(), compute_table_s3_benchmark())
+compute_table_s1_convergence = compute_table_s2_convergence
+compute_table_s2_benchmark = compute_table_s3_benchmark
+compute_multi_beta_slices = compute_table_s8_multi_beta
+compute_modal_competition_table = compute_table_s9_mode_competition
 
 
 def main():
     compute_temporal_stability()
     compute_spatial_stability()
-    compute_benchmarks()
-    compute_sediment_sensitivity()
-    compute_multi_beta_slices()
-    compute_modal_competition_table()
+    compute_table_s1_sediment_sensitivity()
+    compute_table_s2_convergence()
+    compute_table_s3_benchmark()
+    compute_table_s4_curvature_sensitivity()
+    compute_table_s8_multi_beta()
+    compute_table_s9_mode_competition()
     print("\n" + "=" * 60)
-    print("ALL REVISION TABLES COMPUTED AND SAVED TO RESULTS/ SUCCESSFULLY!")
+    print("ALL THEORETICAL REVISION TABLES COMPUTED AND SAVED TO RESULTS/ SUCCESSFULLY!")
     print("=" * 60)
 
 

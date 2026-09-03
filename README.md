@@ -86,12 +86,13 @@ $$
 │   ├── config.py                       # Physical constants and reach parameters
 │   ├── stability/                      # 2D SWE--Exner eigenvalue solver
 │   │   ├── solve_bar_stability.py      # Chebyshev spectral generalized eigenvalue solver
-│   │   ├── compute_all_revision_tables.py # Batch script reproducing Tables 3, 4, S1-S5
-│   │   ├── generate_si_uncertainty_csvs.py# Batch script reproducing Tables S6-S9
+│   │   ├── compute_all_revision_tables.py # Batch script reproducing Tables 3, 4, S1-S4, S8, S9
+│   │   ├── generate_si_uncertainty_csvs.py# Batch script reproducing Tables S5-S7
 │   │   ├── run_phase_diagram.py        # 3D (Cf, Fr, beta) parameter space sweep
 │   │   └── os_operator_curved.py       # Curvature perturbation operator
 │   ├── morphodynamics/                 # Remote sensing and channel network extraction
 │   │   ├── extract_main_channel.py     # Graph-theoretic Dijkstra channel trunk router
+│   │   ├── validate_trunk_extraction.py# Empirical validation of automated trunks for braided years
 │   │   ├── rivgraph_link_profiles.py   # Link-wise B(s) and C(s) profile extraction
 │   │   └── run_rivgraph_batch.py       # 26-year batch execution wrapper
 │   ├── spectral/                       # Spatial series and spectral analysis
@@ -106,22 +107,23 @@ $$
 │   ├── README.md                       # Data dictionary for all CSV tables
 │   ├── temporal_stability_2d.csv       # Table 3 (Main text)
 │   ├── spatial_2016_stability_2d.csv   # Table 4 (Main text)
-│   ├── table_s1_convergence.csv        # Table S1 (Chebyshev convergence)
-│   ├── table_s2_benchmark.csv          # Table S2 (Colombini 1987 benchmark)
-│   ├── table_s3_sediment_sensitivity.csv # Table S3 (Sediment exponent sensitivity)
-│   ├── table_s4_multi_beta.csv         # Table S4 (3D parameter space exploration)
-│   ├── table_s5_mode_competition.csv   # Table S5 (Transverse mode competition)
-│   ├── table_s6_scenes.csv             # Table S6 (Satellite scenes metadata)
-│   ├── table_s7_spectral_sensitivity.csv # Table S7 (Curvature smoothing sensitivity)
-│   ├── table_s8_width_gradient.csv     # Table S8 (Width gradient distributions)
-│   ├── table_s9_curvature_sensitivity.csv # Table S9 (Satellite per-bend curvature)
+│   ├── table_s1_sediment_sensitivity.csv # Table S1 (Sediment closure sensitivity)
+│   ├── table_s2_convergence.csv        # Table S2 (Chebyshev convergence)
+│   ├── table_s3_benchmark.csv          # Table S3 (Colombini 1987 benchmark)
+│   ├── table_s4_curvature_sensitivity.csv # Table S4 (Satellite per-bend curvature)
+│   ├── table_s5_scenes.csv             # Table S5 (Satellite scenes metadata)
+│   ├── table_s6_spectral_sensitivity.csv # Table S6 (Spectral sensitivity & perturbations)
+│   ├── table_s7_width_gradient.csv     # Table S7 (Width gradient distributions)
+│   ├── table_s8_multi_beta.csv         # Table S8 (3D parameter space exploration)
+│   ├── table_s9_mode_competition.csv   # Table S9 (Transverse mode competition)
+│   ├── trunk_validation_metrics.csv    # Quantitative metrics for trunk extraction validation
 │   ├── hydraulic_params_timeseries.csv # Annual reach-averaged hydraulics (2000-2021)
 │   ├── hydraulic_params_spatial_2016.csv # Cross-sectional hydraulics along 2016 reach
 │   ├── profiles/                       # 26-year RivGraph link profiles
 │   ├── trunks/                         # 26-year primary continuous channel trunks
 │   ├── spectral/                       # Spectral summary and annual PSD curves
 │   └── phase_diagram/                  # Dense grid sweep data for Figure 10
-├── publication_figures/                # Standalone plotting scripts for Figures 1–10
+├── publication_figures/                # Standalone plotting scripts for Figures 1–10 and Fig. S1
 │   ├── figure_utils.py                 # Styling setup (Okabe-Ito, 600 DPI, STIX math)
 │   ├── plot_fig01_study_area.py        # Figure 1: Study area & river reach
 │   ├── plot_fig02_pipeline.py          # Figure 2: Integrated methodology workflow
@@ -133,6 +135,8 @@ $$
 │   ├── plot_fig08_spectral.py          # Figure 8: Spectral characteristics of B(s) and C(s)
 │   ├── plot_fig09_nubeta_collapse.py   # Figure 9: Model-derived curvature scaling
 │   ├── plot_fig10_phase_diagram.py     # Figure 10: 3D stability phase diagram
+│   ├── plot_fig_s01_trunk_validation.py# Figure S1: Automated trunk validation against manual reference
+│   ├── plot_fig_s02_width_gradient.py  # Figure S2: Along-stream width gradient profiles & CDF
 │   └── output/                         # Pre-compiled high-res vector figures (PDF / PNG)
 └── examples/                           # Interactive runnable example scripts
     ├── example_01_solve_bar_stability.py # Single cross-section eigenvalue solve demo
@@ -197,7 +201,7 @@ Verify that all 11 manuscript and SI data tables in `results/` are present and c
 ```bash
 python examples/example_02_reproduce_all_tables.py
 ```
-To recompute the convergence and benchmark tables from scratch:
+To recompute the fast tables (Tables S1, S2, S3, S4, S5, S6, S7) from scratch:
 ```bash
 python examples/example_02_reproduce_all_tables.py --fast
 ```
@@ -249,6 +253,12 @@ python publication_figures/plot_fig09_nubeta_collapse.py
 
 # Figure 10: 3D stability phase diagram across (Cf, Fr, beta) space
 python publication_figures/plot_fig10_phase_diagram.py
+
+# Figure S1 (Supporting Information): Automated trunk extraction validation against manual reference
+python publication_figures/plot_fig_s01_trunk_validation.py
+
+# Figure S2 (Supporting Information): Along-stream width gradient profiles and reach coverage CDF
+python publication_figures/plot_fig_s02_width_gradient.py
 ```
 All generated figures are saved to `publication_figures/output/` in both 600 DPI vector PDF and 300 DPI preview PNG formats using the Okabe-Ito colorblind-safe palette.
 
@@ -256,7 +266,7 @@ All generated figures are saved to `publication_figures/output/` in both 600 DPI
 
 ## 🔬 Benchmark Validation
 
-The Chebyshev collocation solver is validated against the classical benchmark of **Colombini, Seminara, and Tubino (1987)** (Table S2):
+The Chebyshev collocation solver is validated against the classical benchmark of **Colombini, Seminara, and Tubino (1987)** (Table S3):
 - At reference parameters ($C_{f0} = 0.003, \beta = 20.0, d_s = 0.01$):
   - **Literature Benchmark:** $k_{\max} = 0.360$, $\omega_{i,\max} = 0.0520$, $c_{\mathrm{migr}} = 0.812$
   - **Our 2D SWE--Exner Solver ($N_{\mathrm{cheb}} = 36$):** $k_{\max} = 0.361$, $\sigma_{r,\max} = 0.0519$, $c_{\mathrm{migr}} = 0.813$

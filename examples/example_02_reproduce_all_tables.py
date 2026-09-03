@@ -3,14 +3,15 @@
 This script executes the batch computation pipeline to reproduce:
 1. Table 3: Multi-decadal temporal stability (14 years) -> results/temporal_stability_2d.csv
 2. Table 4: Reach-scale spatial stability (26 cross-sections) -> results/spatial_2016_stability_2d.csv
-3. Table S1: Chebyshev grid convergence analysis (N=12 to 48) -> results/table_s1_convergence.csv
-4. Table S2: Literature benchmark validation against Colombini et al. (1987) -> results/table_s2_benchmark.csv
-5. Table S3: Sediment transport exponent sensitivity (b=1.5 vs 2.5) -> results/table_s3_sediment_sensitivity.csv
-6. Table S4: 3D parameter space exploration (Cf, Fr, beta) -> results/table_s4_multi_beta.csv
-7. Table S5: Transverse mode competition (m=1, 2, 3, 4) -> results/table_s5_mode_competition.csv
-8. Table S6: Observational satellite scene statistics -> results/table_s6_scenes.csv
-9. Table S7: Curvature smoothing & spectral sensitivity -> results/table_s7_spectral_sensitivity.csv
-10. Table S8: Multi-decadal channel width gradient distributions -> results/table_s8_width_gradient.csv
+3. Table S1: Sediment transport closure sensitivity (theta_c, b, Gamma) -> results/table_s1_sediment_sensitivity.csv
+4. Table S2: Chebyshev grid convergence analysis (N=16 to 64) -> results/table_s2_convergence.csv
+5. Table S3: Literature benchmark validation against Colombini et al. (1987) -> results/table_s3_benchmark.csv
+6. Table S4: Satellite per-bend curvature sensitivity (R, nu*beta) -> results/table_s4_curvature_sensitivity.csv
+7. Table S5: Observational satellite scene statistics -> results/table_s5_scenes.csv
+8. Table S6: Curvature smoothing, step size, tapering & width perturbation sensitivity -> results/table_s6_spectral_sensitivity.csv
+9. Table S7: Multi-decadal channel width gradient distributions -> results/table_s7_width_gradient.csv
+10. Table S8: 3D parameter space exploration (Cf, Fr, beta) -> results/table_s8_multi_beta.csv
+11. Table S9: Transverse mode competition (m=1, 2, 3, 4) -> results/table_s9_mode_competition.csv
 """
 from __future__ import annotations
 
@@ -30,30 +31,32 @@ def verify_tables(results_dir: Path) -> bool:
     tables = [
         ("Table 3 (Temporal Stability)", "temporal_stability_2d.csv", 14),
         ("Table 4 (Spatial Stability 2016)", "spatial_2016_stability_2d.csv", 26),
-        ("Table S1 (Chebyshev Convergence)", "table_s1_convergence.csv", 7),
-        ("Table S2 (Colombini 1987 Benchmark)", "table_s2_benchmark.csv", 3),
-        ("Table S3 (Sediment Sensitivity)", "table_s3_sediment_sensitivity.csv", 6),
-        ("Table S4 (Multi-Beta Parameter Grid)", "table_s4_multi_beta.csv", 48),
-        ("Table S5 (Mode Competition)", "table_s5_mode_competition.csv", 5),
-        ("Table S6 (Satellite Scenes)", "table_s6_scenes.csv", 11),
-        ("Table S7 (Spectral Sensitivity)", "table_s7_spectral_sensitivity.csv", 11),
-        ("Table S8 (Width Gradient)", "table_s8_width_gradient.csv", 11),
-        ("Table S9 (Curvature Sensitivity)", "table_s9_curvature_sensitivity.csv", 6),
+        ("Table S1 (Sediment Closure Sensitivity)", "table_s1_sediment_sensitivity.csv", 15),
+        ("Table S2 (Chebyshev Spectral Convergence)", "table_s2_convergence.csv", 7),
+        ("Table S3 (Colombini 1987 Benchmark)", "table_s3_benchmark.csv", 6),
+        ("Table S4 (Satellite Curvature Sensitivity)", "table_s4_curvature_sensitivity.csv", 6),
+        ("Table S5 (Satellite Scenes & Hydrology)", "table_s5_scenes.csv", 11),
+        ("Table S6 (Spectral Sensitivity & Perturbation)", "table_s6_spectral_sensitivity.csv", 15),
+        ("Table S7 (Width Gradient Distributions)", "table_s7_width_gradient.csv", 11),
+        ("Table S8 (Multi-Beta Parameter Grid)", "table_s8_multi_beta.csv", 48),
+        ("Table S9 (Transverse Mode Competition)", "table_s9_mode_competition.csv", 5),
     ]
 
     print("\nVerifying Manuscript & Supporting Information Tables in results/:")
-    print("-" * 80)
+    print("-" * 85)
     all_ok = True
     for label, fname, expected_rows in tables:
         fpath = results_dir / fname
         if fpath.exists():
             df = pd.read_csv(fpath)
             status = "OK" if len(df) >= expected_rows else "WARN"
-            print(f"  [{status}] {label:<38} -> {fname:<34} ({len(df)} rows)")
+            print(f"  [{status}] {label:<42} -> {fname:<36} ({len(df)} rows)")
+            if status == "WARN":
+                all_ok = False
         else:
-            print(f"  [FAIL] {label:<38} -> {fname:<34} (MISSING)")
+            print(f"  [FAIL] {label:<42} -> {fname:<36} (MISSING)")
             all_ok = False
-    print("-" * 80)
+    print("-" * 85)
     return all_ok
 
 
@@ -67,16 +70,16 @@ def main() -> None:
     parser.add_argument(
         "--fast",
         action="store_true",
-        help="Quick recomputation of Chebyshev convergence (Table S1) and benchmark (Table S2).",
+        help="Quick recomputation of fast tables (Tables S1, S2, S3, S4, S5, S6, S7).",
     )
     args = parser.parse_args()
 
     results_dir = PROJECT_ROOT / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    print("=" * 80)
+    print("=" * 85)
     print("MANUSCRIPT DATA TABLES VERIFICATION AND REPRODUCTION SUITE")
-    print("=" * 80)
+    print("=" * 85)
 
     if args.recompute:
         print("\nStarting FULL recomputation of all stability tables...")
@@ -89,13 +92,20 @@ def main() -> None:
         print(f"\nFull recomputation completed in {time.time() - t0:.1f} seconds.")
 
     elif args.fast:
-        print("\nStarting FAST recomputation of Tables S1, S2, S6, S7, S8, S9...")
-        from src.stability.compute_all_revision_tables import compute_table_s1_convergence, compute_table_s2_benchmark
+        print("\nStarting FAST recomputation of Tables S1, S2, S3, S4, S5, S6, S7...")
+        from src.stability.compute_all_revision_tables import (
+            compute_table_s1_sediment_sensitivity,
+            compute_table_s2_convergence,
+            compute_table_s3_benchmark,
+            compute_table_s4_curvature_sensitivity,
+        )
         from src.stability.generate_si_uncertainty_csvs import main as run_generate_uncertainty
 
         t0 = time.time()
-        compute_table_s1_convergence()
-        compute_table_s2_benchmark()
+        compute_table_s1_sediment_sensitivity()
+        compute_table_s2_convergence()
+        compute_table_s3_benchmark()
+        compute_table_s4_curvature_sensitivity()
         run_generate_uncertainty()
         print(f"\nFast recomputation completed in {time.time() - t0:.1f} seconds.")
 

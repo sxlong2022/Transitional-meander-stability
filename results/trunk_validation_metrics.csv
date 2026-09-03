@@ -1,0 +1,5 @@
+year,morphological_state,auto_length_km,ref_length_km,length_diff_pct,auto_mean_width_m,ref_mean_width_m,width_diff_pct,overlap_50m_pct,overlap_100m_pct,overlap_150m_pct,overlap_300m_pct,mean_deviation_m,median_deviation_m,branch_jumping_errors,loop_trapping_errors
+2000,Braided / Wandering,147.22,150.08,1.9,378.7,396.9,4.59,98.2,99.1,99.6,100.0,2.2,0.0,0,0
+2001,Braided / Wandering,142.26,143.04,0.55,359.9,374.9,4.02,97.3,98.4,98.6,99.3,5.2,0.0,0,0
+2002,Braided / Wandering,148.51,148.41,0.07,338.3,350.3,3.41,97.3,98.3,98.7,99.7,4.4,0.0,0,0
+2003,Braided / Wandering,147.53,149.37,1.24,389.2,422.5,7.9,94.9,97.1,97.8,99.9,7.1,0.0,0,0

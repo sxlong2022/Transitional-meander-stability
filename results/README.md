@@ -8,20 +8,26 @@ This directory contains the versioned data tables, stability calculation results
 
 ## Summary of Tables
 
+All tables strictly follow the sequential numbering in the revised ESPL manuscript and Supporting Information:
+
 | File Name | Manuscript / SI Reference | Description | Rows / Coverage |
 |---|---|---|---|
-| `temporal_stability_2d.csv` | **Table 3** (Main Text) | Multi-decadal linear stability results for 14 post-dam years (2000–2019) | 14 years |
-| `spatial_2016_stability_2d.csv` | **Table 4** (Main Text) | Along-stream linear stability results for 26 cross-sections in 2016 | 26 sections (118 km) |
-| `table_s1_convergence.csv` | **Table S1** (SI Section S5.1) | Chebyshev polynomial degree convergence analysis ($N = 12$ to $48$) | 7 polynomial orders |
-| `table_s2_benchmark.csv` | **Table S2** (SI Section S5.2) | Benchmark validation against Colombini et al. (1987) / Tubino et al. (1999) | 6 benchmark cases |
-| `table_s3_sediment_sensitivity.csv` | **Table S3** (SI Section S1.3) | Sensitivity to sediment transport velocity exponent ($b = 1.5$ vs $2.5$) | 15 sensitivity cases |
-| `table_s4_multi_beta.csv` | **Table S4** (SI Section S6) | Comprehensive 3D parameter sweep ($\beta \in [15, 130]$, $C_f$, $\mathrm{Fr}$) | 48 combinations |
-| `table_s5_mode_competition.csv` | **Table S5** (SI Section S7) | Transverse mode competition ($m = 1, 2, 3, 4$) across aspect ratios | 5 aspect ratio stages |
-| `table_s6_scenes.csv` | **Table S6** (SI Section S8.1) | Landsat/Sentinel satellite scene metadata and flow conditioning | 11 representative years |
-| `table_s7_spectral_sensitivity.csv` | **Table S7** (SI Section S8.2) | Curvature smoothing window, step size, and tapering sensitivity | 11 spectral tests |
-| `table_s8_width_gradient.csv` | **Table S8** (SI Section S8.3) | Along-stream channel width gradient distributions ($|\mathrm{d}B/\mathrm{d}s|$) | 11 annual distributions |
-| `table_s9_curvature_sensitivity.csv` | **Table S9** (SI Section S8.4) | Sensitivity of growth rate to satellite-measured per-bend curvature | 6 curvature scales |
+| `temporal_stability_2d.csv` | **Table 3** (Main Text §4.1) | Multi-decadal linear stability results for 14 post-dam years (2000–2019) | 14 years |
+| `spatial_2016_stability_2d.csv` | **Table 4** (Main Text §4.2) | Along-stream linear stability results for 26 cross-sections in 2016 | 26 sections (118 km) |
+| `table_s1_sediment_sensitivity.csv` | **Table S1** (SI §S1.4) | Sensitivity of peak growth rate to sediment transport closure parameters ($\theta_c, b, \Gamma$) | 15 sensitivity cases |
+| `table_s2_convergence.csv` | **Table S2** (SI §S2.2) | Chebyshev polynomial degree spectral convergence analysis ($N = 16$ to $64$) | 7 polynomial orders |
+| `table_s3_benchmark.csv` | **Table S3** (SI §S2.3) | Benchmark validation against Colombini et al. (1987) / Tubino et al. (1999) | 6 benchmark cases |
+| `table_s4_curvature_sensitivity.csv` | **Table S4** (SI §S2.4) | Sensitivity of growth rate and curvature enhancement $E$ to satellite-measured curvature $R$ | 6 curvature scales |
+| `table_s5_scenes.csv` | **Table S5** (SI §S6.2) | Landsat/Sentinel satellite scene metadata, flow conditioning, and width comparison | 11 representative years |
+| `table_s6_spectral_sensitivity.csv` | **Table S6** (SI §S6.3) | Curvature smoothing, step size, tapering, and discharge-induced width perturbation sensitivity | 15 sensitivity cases |
+| `table_s7_width_gradient.csv` | **Table S7** (SI §S6.4) | Multi-decadal along-stream channel width gradient distributions ($|\mathrm{d}B/\mathrm{d}s|$) | 11 annual distributions |
+| `table_s8_multi_beta.csv` | **Table S8** (SI §S7) | Comprehensive 3D parameter sweep ($\beta \in [15, 250]$, $C_f$, $\mathrm{Fr}$) | 48 combinations |
+| `table_s9_mode_competition.csv` | **Table S9** (SI §S8) | Transverse mode competition ($m = 1, 2, 3, 4$) across aspect ratios | 5 reach/epoch stages |
+| `trunk_validation_metrics.csv` | **SI §S6.2** (Figure S1) | Quantitative spatial overlap and topological validation metrics for braided years | 4 braided years |
 
+> **Note on Supporting Figures**:
+> - **Figure S1** (SI Section S6.2): Algorithmic validation of automated trunk extraction against manual reference in braided reaches, generated via `publication_figures/plot_fig_s01_trunk_validation.py` (`fig_s01_trunk_validation.pdf`).
+> - **Figure S2** (SI Section S6.4): Multi-decadal along-stream spatial profiles and reach coverage CDF of local width gradient $|\mathrm{d}B/\mathrm{d}s|$, generated via `publication_figures/plot_fig_s02_width_gradient.py` (`fig_s02_width_gradient.pdf`).
 ---
 
 ## Core Hydrometric & Morphologic Time Series

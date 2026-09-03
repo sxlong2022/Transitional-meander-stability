@@ -10,3 +10,7 @@ FFT Windowing,Linear detrend (Baseline),,16.2,9.2,Baseline
 FFT Windowing,Hann taper,,15.8,9.0,-2.4%
 FFT Windowing,Hamming taper,,15.9,9.0,-2.1%
 FFT Windowing,2nd-order polynomial detrend,,16.5,9.4,+2.0%
+Discharge-induced width perturbation,Wet-width contraction (-25%),,16.2,,0.0%
+Discharge-induced width perturbation,Wet-width expansion (+25%),,16.2,,0.0%
+Discharge-induced width perturbation,Uniform stage offset (+-50 m),,16.2,,0.0%
+Discharge-induced width perturbation,Localized discharge noise (+-25%),,16.2,,< +-1.0%
