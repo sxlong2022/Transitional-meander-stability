@@ -6,7 +6,7 @@ Computes and saves to CSV:
 3. SI Table S1: Sediment Transport Closure Sensitivity -> results/table_s1_sediment_sensitivity.csv
 4. SI Table S2: Chebyshev Grid Convergence -> results/table_s2_convergence.csv
 5. SI Table S3: Benchmark against Colombini et al. (1987) / Tubino et al. (1999) -> results/table_s3_benchmark.csv
-6. SI Table S4: Satellite Per-Bend Curvature Sensitivity -> results/table_s4_curvature_sensitivity.csv
+6. SI Table S7: Satellite Per-Bend Curvature Sensitivity -> results/table_s7_curvature_sensitivity.csv
 7. SI Table S8: Three-Dimensional Parameter Space (Cf, Fr, beta) -> results/table_s8_multi_beta.csv
 8. SI Table S9: Transverse Mode Competition (m=1,2,3,4) -> results/table_s9_mode_competition.csv
 """
@@ -288,10 +288,10 @@ def compute_table_s3_benchmark() -> pd.DataFrame:
     return df_s3
 
 
-def compute_table_s4_curvature_sensitivity() -> pd.DataFrame:
-    """Compute Table S4: Sensitivity to satellite-measured curvature."""
+def compute_table_s7_curvature_sensitivity() -> pd.DataFrame:
+    """Compute Table S7: Sensitivity to satellite-measured curvature."""
     print("\n" + "=" * 60)
-    print("6. COMPUTING SATELLITE CURVATURE SENSITIVITY (TABLE S4)")
+    print("6. COMPUTING SATELLITE CURVATURE SENSITIVITY (TABLE S7)")
     print("=" * 60)
 
     # 2016 baseline reach conditions: beta=132.4, Cf=0.0017, Fr=0.261, theta=4.0, H=3.5 m, B=463.4 m
@@ -335,7 +335,10 @@ def compute_table_s4_curvature_sensitivity() -> pd.DataFrame:
             "E_pct": round(res["E_pct"], 3),
         })
 
-    df_s4 = pd.DataFrame(records)
+    df_s7 = pd.DataFrame(records)
+    df_s7.to_csv(RESULTS_DIR / "table_s7_curvature_sensitivity.csv", index=False)
+    print(df_s7.to_string(index=False))
+    return df_s7
     df_s4.to_csv(RESULTS_DIR / "table_s4_curvature_sensitivity.csv", index=False)
     print(df_s4.to_string(index=False))
     return df_s4
@@ -402,6 +405,7 @@ compute_sediment_sensitivity = compute_table_s1_sediment_sensitivity
 compute_benchmarks = lambda: (compute_table_s2_convergence(), compute_table_s3_benchmark())
 compute_table_s1_convergence = compute_table_s2_convergence
 compute_table_s2_benchmark = compute_table_s3_benchmark
+compute_table_s4_curvature_sensitivity = compute_table_s7_curvature_sensitivity
 compute_multi_beta_slices = compute_table_s8_multi_beta
 compute_modal_competition_table = compute_table_s9_mode_competition
 
@@ -412,7 +416,7 @@ def main():
     compute_table_s1_sediment_sensitivity()
     compute_table_s2_convergence()
     compute_table_s3_benchmark()
-    compute_table_s4_curvature_sensitivity()
+    compute_table_s7_curvature_sensitivity()
     compute_table_s8_multi_beta()
     compute_table_s9_mode_competition()
     print("\n" + "=" * 60)

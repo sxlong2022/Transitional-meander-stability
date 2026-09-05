@@ -6,10 +6,10 @@ This script executes the batch computation pipeline to reproduce:
 3. Table S1: Sediment transport closure sensitivity (theta_c, b, Gamma) -> results/table_s1_sediment_sensitivity.csv
 4. Table S2: Chebyshev grid convergence analysis (N=16 to 64) -> results/table_s2_convergence.csv
 5. Table S3: Literature benchmark validation against Colombini et al. (1987) -> results/table_s3_benchmark.csv
-6. Table S4: Satellite per-bend curvature sensitivity (R, nu*beta) -> results/table_s4_curvature_sensitivity.csv
-7. Table S5: Observational satellite scene statistics -> results/table_s5_scenes.csv
-8. Table S6: Curvature smoothing, step size, tapering & width perturbation sensitivity -> results/table_s6_spectral_sensitivity.csv
-9. Table S7: Multi-decadal channel width gradient distributions -> results/table_s7_width_gradient.csv
+6. Table S4: Observational satellite scene statistics -> results/table_s4_scenes.csv
+7. Table S5: Curvature smoothing, step size, tapering & width perturbation sensitivity -> results/table_s5_spectral_sensitivity.csv
+8. Table S6: Multi-decadal channel width gradient distributions -> results/table_s6_width_gradient.csv
+9. Table S7: Satellite per-bend curvature sensitivity (R, nu*beta) -> results/table_s7_curvature_sensitivity.csv
 10. Table S8: 3D parameter space exploration (Cf, Fr, beta) -> results/table_s8_multi_beta.csv
 11. Table S9: Transverse mode competition (m=1, 2, 3, 4) -> results/table_s9_mode_competition.csv
 """
@@ -34,10 +34,10 @@ def verify_tables(results_dir: Path) -> bool:
         ("Table S1 (Sediment Closure Sensitivity)", "table_s1_sediment_sensitivity.csv", 15),
         ("Table S2 (Chebyshev Spectral Convergence)", "table_s2_convergence.csv", 7),
         ("Table S3 (Colombini 1987 Benchmark)", "table_s3_benchmark.csv", 6),
-        ("Table S4 (Satellite Curvature Sensitivity)", "table_s4_curvature_sensitivity.csv", 6),
-        ("Table S5 (Satellite Scenes & Hydrology)", "table_s5_scenes.csv", 11),
-        ("Table S6 (Spectral Sensitivity & Perturbation)", "table_s6_spectral_sensitivity.csv", 15),
-        ("Table S7 (Width Gradient Distributions)", "table_s7_width_gradient.csv", 11),
+        ("Table S4 (Satellite Scenes & Hydrology)", "table_s4_scenes.csv", 11),
+        ("Table S5 (Spectral Sensitivity & Perturbation)", "table_s5_spectral_sensitivity.csv", 15),
+        ("Table S6 (Width Gradient Distributions)", "table_s6_width_gradient.csv", 11),
+        ("Table S7 (Satellite Curvature Sensitivity)", "table_s7_curvature_sensitivity.csv", 6),
         ("Table S8 (Multi-Beta Parameter Grid)", "table_s8_multi_beta.csv", 48),
         ("Table S9 (Transverse Mode Competition)", "table_s9_mode_competition.csv", 5),
     ]
@@ -97,7 +97,7 @@ def main() -> None:
             compute_table_s1_sediment_sensitivity,
             compute_table_s2_convergence,
             compute_table_s3_benchmark,
-            compute_table_s4_curvature_sensitivity,
+            compute_table_s7_curvature_sensitivity,
         )
         from src.stability.generate_si_uncertainty_csvs import main as run_generate_uncertainty
 
@@ -105,7 +105,7 @@ def main() -> None:
         compute_table_s1_sediment_sensitivity()
         compute_table_s2_convergence()
         compute_table_s3_benchmark()
-        compute_table_s4_curvature_sensitivity()
+        compute_table_s7_curvature_sensitivity()
         run_generate_uncertainty()
         print(f"\nFast recomputation completed in {time.time() - t0:.1f} seconds.")
 

@@ -1,4 +1,4 @@
-"""Generate and save Tables S5, S6, S7 CSV files for remote sensing uncertainty appendix."""
+"""Generate and save Tables S4, S5, S6 CSV files for remote sensing uncertainty appendix."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,8 +9,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = PROJECT_ROOT / "results"
 
 
-def generate_table_s5_scenes() -> pd.DataFrame:
-    """Generate Table S5: Landsat Scenes & Hydrology Metadata."""
+def generate_table_s4_scenes() -> pd.DataFrame:
+    """Generate Table S4: Landsat Scenes & Hydrology Metadata."""
     df_s5 = pd.DataFrame([
         {"year": 2000, "sensors": "Landsat 5/7", "scenes": 21, "window": "Apr-Nov", "Q_mean_m3s": 1280, "Q_wsrs_m3s": "2200-2600", "B_wet_m": 482, "B_bf_m": 532},
         {"year": 2001, "sensors": "Landsat 7", "scenes": 19, "window": "Apr-Oct", "Q_mean_m3s": 1150, "Q_wsrs_m3s": "2100-2500", "B_wet_m": 495, "B_bf_m": 546},
@@ -24,14 +24,17 @@ def generate_table_s5_scenes() -> pd.DataFrame:
         {"year": 2021, "sensors": "Landsat 8/9", "scenes": 34, "window": "Apr-Nov", "Q_mean_m3s": 1710, "Q_wsrs_m3s": "2900-3600", "B_wet_m": 542, "B_bf_m": 665},
         {"year": 2025, "sensors": "Landsat 8/9", "scenes": 30, "window": "Apr-Oct", "Q_mean_m3s": 1550, "Q_wsrs_m3s": "2700-3400", "B_wet_m": 538, "B_bf_m": np.nan},
     ])
-    out_csv = RESULTS_DIR / "table_s5_scenes.csv"
+    out_csv = RESULTS_DIR / "table_s4_scenes.csv"
+    df_s5.to_csv(out_csv, index=False)
+    print(f"Saved {out_csv.name}")
+    return df_s5
     df_s5.to_csv(out_csv, index=False)
     print(f"Saved {out_csv.name}")
     return df_s5
 
 
-def generate_table_s6_spectral_sensitivity() -> pd.DataFrame:
-    """Generate Table S6: Curvature Smoothing, Windowing & Width Perturbation Sensitivity."""
+def generate_table_s5_spectral_sensitivity() -> pd.DataFrame:
+    """Generate Table S5: Curvature Smoothing, Windowing & Width Perturbation Sensitivity."""
     df_s6 = pd.DataFrame([
         {"test_type": "Resampling step ds", "configuration": "ds = 50 m", "L_corr_C_m": 225.0, "lambda_B_km": 16.1, "lambda_C_km": 9.1, "rel_diff": "< +-3%"},
         {"test_type": "Resampling step ds", "configuration": "ds = 100 m (Baseline)", "L_corr_C_m": 240.0, "lambda_B_km": 16.2, "lambda_C_km": 9.2, "rel_diff": "Baseline"},
@@ -49,14 +52,17 @@ def generate_table_s6_spectral_sensitivity() -> pd.DataFrame:
         {"test_type": "Discharge-induced width perturbation", "configuration": "Uniform stage offset (+-50 m)", "L_corr_C_m": np.nan, "lambda_B_km": 16.2, "lambda_C_km": np.nan, "rel_diff": "0.0%"},
         {"test_type": "Discharge-induced width perturbation", "configuration": "Localized discharge noise (+-25%)", "L_corr_C_m": np.nan, "lambda_B_km": 16.2, "lambda_C_km": np.nan, "rel_diff": "< +-1.0%"},
     ])
-    out_csv = RESULTS_DIR / "table_s6_spectral_sensitivity.csv"
+    out_csv = RESULTS_DIR / "table_s5_spectral_sensitivity.csv"
+    df_s6.to_csv(out_csv, index=False)
+    print(f"Saved {out_csv.name}")
+    return df_s6
     df_s6.to_csv(out_csv, index=False)
     print(f"Saved {out_csv.name}")
     return df_s6
 
 
-def generate_table_s7_width_gradient() -> pd.DataFrame:
-    """Generate Table S7: Multi-Decadal Channel Width Gradient Distributions."""
+def generate_table_s6_width_gradient() -> pd.DataFrame:
+    """Generate Table S6: Multi-Decadal Channel Width Gradient Distributions."""
     df_s7 = pd.DataFrame([
         {"year": 2000, "Q25": 0.06, "Median_raw": 0.15, "Median_1B_smoothed": 0.09, "Q75": 0.32, "P90": 0.58, "pct_lt_005": 26.4, "pct_lt_010": 48.2, "pct_lt_020": 73.1},
         {"year": 2001, "Q25": 0.05, "Median_raw": 0.14, "Median_1B_smoothed": 0.09, "Q75": 0.30, "P90": 0.54, "pct_lt_005": 28.1, "pct_lt_010": 51.0, "pct_lt_020": 75.4},
@@ -70,16 +76,25 @@ def generate_table_s7_width_gradient() -> pd.DataFrame:
         {"year": 2021, "Q25": 0.05, "Median_raw": 0.13, "Median_1B_smoothed": 0.08, "Q75": 0.28, "P90": 0.50, "pct_lt_005": 30.5, "pct_lt_010": 53.8, "pct_lt_020": 77.9},
         {"year": 2025, "Q25": 0.05, "Median_raw": 0.12, "Median_1B_smoothed": 0.08, "Q75": 0.26, "P90": 0.48, "pct_lt_005": 32.1, "pct_lt_010": 55.2, "pct_lt_020": 79.1},
     ])
-    out_csv = RESULTS_DIR / "table_s7_width_gradient.csv"
+    out_csv = RESULTS_DIR / "table_s6_width_gradient.csv"
+    df_s7.to_csv(out_csv, index=False)
+    print(f"Saved {out_csv.name}")
+    return df_s7
     df_s7.to_csv(out_csv, index=False)
     print(f"Saved {out_csv.name}")
     return df_s7
 
 
+# Backwards compatibility aliases
+generate_table_s5_scenes = generate_table_s4_scenes
+generate_table_s6_spectral_sensitivity = generate_table_s5_spectral_sensitivity
+generate_table_s7_width_gradient = generate_table_s6_width_gradient
+
+
 def main():
-    generate_table_s5_scenes()
-    generate_table_s6_spectral_sensitivity()
-    generate_table_s7_width_gradient()
+    generate_table_s4_scenes()
+    generate_table_s5_spectral_sensitivity()
+    generate_table_s6_width_gradient()
     print("All observational uncertainty tables generated successfully.")
 
 

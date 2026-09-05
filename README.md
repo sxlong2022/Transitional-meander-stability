@@ -105,10 +105,10 @@ $$
 │   ├── table_s1_sediment_sensitivity.csv # Table S1 (Sediment closure sensitivity)
 │   ├── table_s2_convergence.csv        # Table S2 (Chebyshev convergence)
 │   ├── table_s3_benchmark.csv          # Table S3 (Colombini 1987 benchmark)
-│   ├── table_s4_curvature_sensitivity.csv # Table S4 (Satellite per-bend curvature)
-│   ├── table_s5_scenes.csv             # Table S5 (Satellite scenes metadata)
-│   ├── table_s6_spectral_sensitivity.csv # Table S6 (Spectral sensitivity & perturbations)
-│   ├── table_s7_width_gradient.csv     # Table S7 (Width gradient distributions)
+│   ├── table_s4_scenes.csv             # Table S4 (Satellite scenes metadata)
+│   ├── table_s5_spectral_sensitivity.csv # Table S5 (Spectral sensitivity & perturbations)
+│   ├── table_s6_width_gradient.csv     # Table S6 (Width gradient distributions)
+│   ├── table_s7_curvature_sensitivity.csv # Table S7 (Satellite per-bend curvature)
 │   ├── table_s8_multi_beta.csv         # Table S8 (3D parameter space exploration)
 │   ├── table_s9_mode_competition.csv   # Table S9 (Transverse mode competition)
 │   ├── trunk_validation_metrics.csv    # Quantitative metrics for trunk extraction validation
@@ -117,7 +117,8 @@ $$
 │   ├── profiles/                       # 26-year RivGraph link profiles
 │   ├── trunks/                         # 26-year primary continuous channel trunks
 │   ├── spectral/                       # Spectral summary and annual PSD curves
-│   └── phase_diagram/                  # Dense grid sweep data for Figure 10
+│   ├── phase_diagram/                  # Dense grid sweep data for Figure 10
+│   └── beta_sweep/                     # Curvature perturbation sweep data for Figure 9
 ├── publication_figures/                # Standalone plotting scripts for Figures 1–10 and Figs. S1–S2
 │   ├── figure_utils.py                 # Styling setup (Okabe-Ito, 600 DPI, STIX math)
 │   ├── plot_fig01_study_area.py        # Figure 1: Study area & river reach
@@ -216,7 +217,7 @@ The resulting vector graphic is exported to `publication_figures/output/example_
 
 ## 📊 Reproducing Manuscript Figures
 
-All manuscript figures (Figures 1–10) can be independently generated using the standalone scripts in `publication_figures/`:
+All manuscript figures (Figures 1–10 and Supporting Figures S1–S2) can be independently generated using the standalone scripts in `publication_figures/`:
 
 ```bash
 # Figure 1: Study area map and Google Earth overview
