@@ -86,4 +86,4 @@ This major release coincides with the comprehensive revision submitted to *Earth
 
 ### Repository Links
 - **GitHub**: [https://github.com/sxlong2022/Transitional-meander-stability](https://github.com/sxlong2022/Transitional-meander-stability)
-- **Zenodo DOI**: [10.5281/zenodo.22245579](https://doi.org/10.5281/zenodo.22245579)
+- **Zenodo DOI**: [10.5281/zenodo.22337336](https://doi.org/10.5281/zenodo.22337336)

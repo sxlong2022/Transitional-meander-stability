@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
-[![DOI: 10.5281/zenodo.22245579](https://zenodo.org/badge/DOI/10.5281/zenodo.22245579.svg)](https://doi.org/10.5281/zenodo.22245579)
+[![DOI: 10.5281/zenodo.22337336](https://zenodo.org/badge/DOI/10.5281/zenodo.22337336.svg)](https://doi.org/10.5281/zenodo.22337336)
 [![Status: Peer-Reviewed Revision](https://img.shields.io/badge/Manuscript-ESPL%20Revision-brightgreen.svg)](https://onlinelibrary.wiley.com/journal/10969837)
 
 Official computational repository and reproducible data archive for the manuscript:
@@ -292,9 +292,9 @@ Permanent archival record:
   title     = {Planar {2D} Shallow-Water--{Exner} Stability Diagnosis of Bar Formation in Transitional Rivers: Software and Data Archive},
   year      = {2026},
   publisher = {Zenodo},
-  version   = {v1.0.0},
-  doi       = {10.5281/zenodo.22245579},
-  url       = {https://doi.org/10.5281/zenodo.22245579}
+  version   = {v1.2.0},
+  doi       = {10.5281/zenodo.22337336},
+  url       = {https://doi.org/10.5281/zenodo.22337336}
 }
 ```
 

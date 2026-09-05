@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transitional-meander-stability"
-version = "1.0.0"
+version = "1.2.0"
 description = "Planar 2D shallow-water--Exner stability diagnosis of bar formation and remote sensing analysis for transitional meandering rivers"
 readme = "README.md"
 authors = [
@@ -36,7 +36,7 @@ dependencies = [
 Homepage = "https://github.com/sxlong2022/Transitional-meander-stability"
 Documentation = "https://github.com/sxlong2022/Transitional-meander-stability#readme"
 Repository = "https://github.com/sxlong2022/Transitional-meander-stability.git"
-"Zenodo Archive" = "https://doi.org/10.5281/zenodo.22245579"
+"Zenodo Archive" = "https://doi.org/10.5281/zenodo.22337336"
 
 [tool.setuptools.packages.find]
 where = ["."]
