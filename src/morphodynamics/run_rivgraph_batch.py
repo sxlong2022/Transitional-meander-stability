@@ -1,20 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Step 2.3:  DSWE  RivGraph 。
+"""Batch execution wrapper: automated RivGraph channel network and link profile extraction.
 
- DSWE mask:
-1. RivGraph river() -> compute_network() -> to_geovectors("network", "shp")
-    links.shp / nodes.shp
-2.  rivgraph_link_profiles.compute_link_profiles()  s, B(s), C(s)
-3.  link_sBC  CSV
+For each annual water mask composite:
+1. Executes RivGraph river() -> compute_network() -> to_geovectors("network", "shp")
+   producing vectorized links.shp and nodes.shp.
+2. Calls rivgraph_link_profiles.compute_link_profiles() to sample s, B(s), and C(s).
+3. Exports annual link_sBC CSV profiles.
 
-:
-# 
+Usage:
   python -m src.morphodynamics.run_rivgraph_batch --years 2016
-
-# 
   python -m src.morphodynamics.run_rivgraph_batch
-
-# exit_sides
   python -m src.morphodynamics.run_rivgraph_batch --exit-sides WN
 """
 from __future__ import annotations

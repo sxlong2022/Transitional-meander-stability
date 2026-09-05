@@ -12,7 +12,7 @@ All tables strictly follow the sequential numbering in the revised ESPL manuscri
 
 | File Name | Manuscript / SI Reference | Description | Rows / Coverage |
 |---|---|---|---|
-| `temporal_stability_2d.csv` | **Table 3** (Main Text §4.1) | Multi-decadal linear stability results for 14 post-dam years (2000–2019) | 14 years |
+| `temporal_stability_2d.csv` | **Table 3** (Main Text §4.1) | Multi-decadal linear stability results for 14 surveyed post-dam years spanning 2000–2021 | 14 years |
 | `spatial_2016_stability_2d.csv` | **Table 4** (Main Text §4.2) | Along-stream linear stability results for 26 cross-sections in 2016 | 26 sections (118 km) |
 | `table_s1_sediment_sensitivity.csv` | **Table S1** (SI §S1.4) | Sensitivity of peak growth rate to sediment transport closure parameters ($\theta_c, b, \Gamma$) | 15 sensitivity cases |
 | `table_s2_convergence.csv` | **Table S2** (SI §S2.2) | Chebyshev polynomial degree spectral convergence analysis ($N = 16$ to $64$) | 7 polynomial orders |
@@ -32,7 +32,7 @@ All tables strictly follow the sequential numbering in the revised ESPL manuscri
 
 ## Core Hydrometric & Morphologic Time Series
 
-- **`hydraulic_params_timeseries.csv`**: Annual reach-averaged hydrometric parameters (2000–2021) at Gaocun station during bankfull/flood flow:
+- **`hydraulic_params_timeseries.csv`**: Annual reach-averaged hydrometric parameters for 14 surveyed years spanning 2000–2021 at Gaocun station during bankfull/flood flow:
   - `year`: Year of observation
   - `beta`: Aspect ratio $B/H$
   - `Cf_energy`: Energy-slope based friction coefficient $C_f = g H S / U^2$
@@ -44,8 +44,6 @@ All tables strictly follow the sequential numbering in the revised ESPL manuscri
   - `dam_km`: Distance from Xiaolangdi Dam (km, 303 to 421 km)
   - `beta(s)`, `Fr(s)`, `Cf(s)`, `Shields(s)`: Local reach parameters
 
-- **`sigma_width_summary.csv`**: 26-year summary of dimensionless channel width gradient $\sigma_{\mathrm{width}} = \frac{1}{B}\frac{\mathrm{d}B}{\mathrm{d}s}$.
-
 ---
 
 ## Subdirectories
@@ -53,5 +51,5 @@ All tables strictly follow the sequential numbering in the revised ESPL manuscri
 - **`profiles/`**: 26 annual CSV files containing channel width $B(s)$ and curvature $C(s)$ along all link segments extracted by RivGraph.
 - **`trunks/`**: 26 annual CSV files containing primary continuous channel trunks ($135\text{--}155\,\mathrm{km}$) extracted via graph-theoretic shortest path routing.
 - **`spectral/`**: Power spectral density (PSD) curves and `spectral_summary.csv` containing dominant wavelengths ($\lambda_B, \lambda_C$), cross-correlation coefficients, and $e$-folding persistence lengths.
-- **`phase_diagram/`**: Dense numerical sweep data `phase_diagram_omega_i.csv` ($50 \times 50$ grid) used to render the 3D $(C_f, \mathrm{Fr}, \beta)$ stability phase diagram (Figure 10).
-- **`beta_sweep/`**: Intermediate convergence, profile, and aspect-ratio sweep tables.
+- **`phase_diagram/`**: Dense numerical sweep data `phase_diagram_omega_i.csv` ($50 \\times 50$ grid) used to render the stability phase diagram (Figure 10).
+- **`beta_sweep/`**: Curvature perturbation sweep dataset `curved_beta_nu_sweep.csv` used to render Figure 9.

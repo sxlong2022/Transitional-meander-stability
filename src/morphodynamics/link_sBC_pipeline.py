@@ -1,13 +1,9 @@
-""" s–B–C ：。
+"""Channel geometry profile calculation pipeline: extract s, B, C from water masks and RivGraph links.
 
- C&G  link_sBCMn_pipeline.py，
- Subproject-3 ：
-  -  PIV （Mn）
-  -  RivGraph link （s, B, C）
-  -  s–B–C 
+Computes along-stream centerline coordinate s, local channel width B(s), and curvature C(s)
+from binary water masks and vectorized centerline networks.
 
-（）：
-
+Typical usage:
     python -m src.morphodynamics.link_sBC_pipeline \
         --site Gaocun-Sunkou \
         --mask-level 2 \
@@ -41,24 +37,24 @@ def compute_link_sBC_for_site(
     step_m: float = 100.0,
     export_csv_path: str | None = None,
 ) -> Dict[str, Dict[str, np.ndarray]]:
-    """/ RivGraph link  s-B-C 。
+    """为指定站点/掩膜等级计算所有 RivGraph link 的 s-B-C 剖面。
 
-    
+    参数
     ------
     site : str
-        ， "Gaocun-Sunkou"。
+        站点名称，例如 "Gaocun-Sunkou"。
     mask_level : int
-        ， 2  Mask2。
+        掩膜等级，例如 2 表示 Mask2。
     mask_raster_path : str
-         (.tif)。
+        二值水体掩膜栅格路径 (.tif)。
     links_vector_path : str
-        RivGraph link  (.shp / .gpkg)。
+        RivGraph link 矢量文件路径 (.shp / .gpkg)。
     step_m : float
-         link （）。
+        沿 link 的加密采样间距（米）。
     export_csv_path : str, optional
-        ， link  s-B-C  CSV。
+        若提供，则将所有 link 的 s-B-C 剖面扁平导出为 CSV。
 
-    
+    返回
     ------
     link_sBC : {link_id: {"s", "x", "y", "B", "C"}}
     """
@@ -106,7 +102,7 @@ def _export_link_sBC_csv(
     step_m: float,
     out_path: str | Path,
 ) -> None:
-    """ per-link  s-B-C  CSV。"""
+    """将 per-link 的 s-B-C 剖面导出为扁平 CSV。"""
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 

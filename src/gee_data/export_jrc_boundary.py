@@ -1,25 +1,14 @@
-""" JRC Global Surface Water occurrence — tight boundary。
+"""Export tight study reach boundary from JRC Global Surface Water occurrence.
 
- JRC/GSW1_4/GlobalSurfaceWater occurrence  (1984-2021, 0-100%),
- bbox ,  buffer  GeoJSON,
- DSWE  tight ROI。
+Uses JRC/GSW1_4/GlobalSurfaceWater occurrence band (1984-2021, 0-100%) to extract
+historical water presence within the rough bounding box, buffers the polygon,
+and exports GeoJSON and Shapefile to Google Drive as the tight ROI for DSWE annual masks.
 
-:
-    - Google Drive GeoJSON: GaocunSunkou_boundary.geojson
-    - Google Drive Shapefile: GaocunSunkou_boundary.shp
-    - Google Drive GeoTIFF: GaocunSunkou_JRC_occurrence.tif ()
-
-:
+Workflow:
     Step 1: python -m src.gee_data.export_jrc_boundary
-    Step 2:  Google Drive  data/GIS/Gaocun-Sunkou/
-    Step 3: python -m src.gee_data.filter_boundary  ()
-    Step 4: python -m src.gee_data.export_gaocun_sunkou_masks ( filtered boundary)
-
-:
-    - earthengine-api
-
- GEE:
-    earthengine authenticate
+    Step 2: Download from Google Drive to data/GIS/Gaocun-Sunkou/
+    Step 3: python -m src.gee_data.filter_boundary (remove small detached fragments)
+    Step 4: python -m src.gee_data.export_gaocun_sunkou_masks (using filtered boundary)
 """
 from __future__ import annotations
 
@@ -33,14 +22,14 @@ import ee
 
 
 # =====================================================================================
-# === GEE  ======================================================================
+# === GEE 初始化 ======================================================================
 # =====================================================================================
 
 GEE_PROJECT = "hip-apricot-453400-m1"
 
 
 def initialize_gee() -> bool:
-    """ Google Earth Engine。"""
+    """初始化 Google Earth Engine。"""
     try:
         ee.Initialize(project=GEE_PROJECT)
         print("Google Earth Engine initialized successfully.")
@@ -52,54 +41,54 @@ def initialize_gee() -> bool:
 
 
 # =====================================================================================
-# ===  bbox  ==================================================================
+# === 粗框 bbox 定义 ==================================================================
 # =====================================================================================
 
-# — ROI（WGS84 ）
-# ： PyGEE-SWToolbox  TIF  [115.076, 35.395, 115.914, 35.935]
-# （）:  (115.0759, 35.3641),  (115.9052, 35.9340)
-# 35.34 (35.3641N)
+# 高村—孙口河段粗框 ROI（WGS84 经纬度）
+# 来源：用户已有研究 PyGEE-SWToolbox 导出 TIF 边界 [115.076, 35.395, 115.914, 35.935]
+# 站点坐标（十进制）: 高村 (115.0759, 35.3641), 孙口 (115.9052, 35.9340)
+# 南边界取到 35.34 以将高村站(35.3641N)包括在内并预留缓冲
 _ROUGH_BBOX_COORDS = [115.07, 35.34, 115.92, 35.94]
 
 
 # =====================================================================================
-# === JRC occurrence boundary  ====================================================
+# === JRC occurrence boundary 提取 ====================================================
 # =====================================================================================
 
 def build_occurrence_boundary(
     occurrence_threshold: int = 5,
     buffer_m: int = 1000,
 ) -> tuple[ee.FeatureCollection, ee.Image]:
-    """ JRC occurrence  tight boundary 。
+    """从 JRC occurrence 构建 tight boundary 多边形。
 
-    
+    参数
     ------
     occurrence_threshold : int
-        occurrence （%），。 5%。
+        occurrence 最低阈值（%），低于此值视为噪声。默认 5%。
     buffer_m : int
-        （）。 1000m。
+        向外缓冲距离（米）。默认 1000m。
 
-    
+    返回
     ------
     boundary_fc : ee.FeatureCollection
-        （ Feature）。
+        缓冲后的边界多边形（单个 Feature）。
     occurrence : ee.Image
-         JRC occurrence （0-100），。
+        原始 JRC occurrence 影像（0-100），用于可视化导出。
     """
     rough_bbox = ee.Geometry.Rectangle(_ROUGH_BBOX_COORDS)
 
-# JRC Global Surface Water occurrence
+    # 加载 JRC Global Surface Water occurrence 波段
     gsw = ee.Image("JRC/GSW1_4/GlobalSurfaceWater")
     occurrence = gsw.select("occurrence").clip(rough_bbox)
-# ：occurrence >= threshold →
+    # 阈值化：occurrence >= threshold → 二值掩膜
     water_ever = occurrence.gte(occurrence_threshold).selfMask()
 
-# ： 10 （~9000 m²）
-# connectedPixelCount ，
+    # 连通域降噪：移除小于 10 像元（~9000 m²）的孤立斑块
+    # connectedPixelCount 计算连通像元数，过滤小碎片
     connected = water_ever.connectedPixelCount(maxSize=50)
     water_clean = water_ever.updateMask(connected.gte(10))
 
-# 
+    # 矢量化
     vectors = water_clean.reduceToVectors(
         geometry=rough_bbox,
         scale=30,
@@ -110,11 +99,11 @@ def build_occurrence_boundary(
         bestEffort=True,
     )
 
-# geometry， buffer
+    # 合并所有多边形为单个 geometry，然后 buffer
     merged = vectors.union(maxError=30)
     buffered = merged.geometry().buffer(buffer_m, maxError=30)
 
-# FeatureCollection
+    # 封装为 FeatureCollection
     boundary_fc = ee.FeatureCollection([ee.Feature(buffered, {
         "site": "Gaocun-Sunkou",
         "source": "JRC/GSW1_4/GlobalSurfaceWater",
@@ -127,7 +116,7 @@ def build_occurrence_boundary(
 
 
 # =====================================================================================
-# ===  ========================================================================
+# === 导出函数 ========================================================================
 # =====================================================================================
 
 def export_boundary_and_occurrence(
@@ -135,21 +124,21 @@ def export_boundary_and_occurrence(
     buffer_m: int = 1000,
     drive_folder: str = "GaocunSunkou_WaterMasks",
 ) -> list:
-    """ boundary GeoJSON  occurrence GeoTIFF  Google Drive。
+    """导出 boundary GeoJSON 和 occurrence GeoTIFF 到 Google Drive。
 
-    
+    参数
     ------
     occurrence_threshold : int
-        occurrence （%）。
+        occurrence 最低阈值（%）。
     buffer_m : int
-        （）。
+        向外缓冲距离（米）。
     drive_folder : str
-        Google Drive 。
+        Google Drive 目标文件夹名。
 
-    
+    返回
     ------
     tasks : list[tuple[str, ee.batch.Task]]
-        。
+        已提交的导出任务列表。
     """
     print(f"\n{'=' * 60}")
     print("Export JRC occurrence boundary for Gaocun-Sunkou")
@@ -165,7 +154,7 @@ def export_boundary_and_occurrence(
 
     tasks = []
 
-# ---  1: boundary GeoJSON ---
+    # --- 导出 1: boundary GeoJSON ---
     task_boundary = ee.batch.Export.table.toDrive(
         collection=boundary_fc,
         description="GaocunSunkou_JRC_boundary",
@@ -181,7 +170,7 @@ def export_boundary_and_occurrence(
 
     rough_bbox = ee.Geometry.Rectangle(_ROUGH_BBOX_COORDS)
 
-# ---  2: occurrence GeoTIFF（）---
+    # --- 导出 2: occurrence GeoTIFF（可视化参考）---
     task_occurrence = ee.batch.Export.image.toDrive(
         image=occurrence.toFloat(),
         description="GaocunSunkou_JRC_occurrence",
@@ -198,7 +187,7 @@ def export_boundary_and_occurrence(
 
     time.sleep(1)
 
-# ---  3: boundary  SHP（ GIS ）---
+    # --- 导出 3: boundary 也导出为 SHP（本地 GIS 使用）---
     task_shp = ee.batch.Export.table.toDrive(
         collection=boundary_fc,
         description="GaocunSunkou_JRC_boundary_shp",
@@ -227,14 +216,14 @@ def export_boundary_and_occurrence(
 
 
 # =====================================================================================
-# === （， boundary ）=========================================
+# === 面积统计（可选，快速检查 boundary 合理性）=========================================
 # =====================================================================================
 
 def print_area_stats(
     occurrence_threshold: int = 5,
     buffer_m: int = 1000,
 ):
-    """ boundary ， bbox 。"""
+    """打印 boundary 面积统计，与原始 bbox 面积对比。"""
     boundary_fc, _ = build_occurrence_boundary(
         occurrence_threshold=occurrence_threshold,
         buffer_m=buffer_m,
@@ -255,7 +244,7 @@ def print_area_stats(
 
 
 # =====================================================================================
-# === CLI  ========================================================================
+# === CLI 入口 ========================================================================
 # =====================================================================================
 
 def main():

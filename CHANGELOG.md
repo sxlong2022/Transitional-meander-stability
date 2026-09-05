@@ -7,18 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-09-05 (2D SWE--Exner Unification & Codebase Streamlining)
+
+This maintenance release eliminates legacy pre-revision code and aligns the repository 100% with the revised ESPL manuscript:
+
+### Removed
+- **Obsolete 1D Orr-Sommerfeld Formulation**: Removed pre-revision 1D vertical Orr-Sommerfeld stability routines (`src/stability/solve_os.py`, `u1_shape.py`, `os_operator_curved.py`, `run_beta_sweep.py`).
+- **Obsolete Diagnostic & Predictor Wrappers**: Removed outdated `src/diagnostics/diagnose_stability.py` and `src/bar_modes/predict_bars.py` which utilized unreduced aspect ratios and artificial wavenumber cutoffs.
+- **Obsolete Datasets**: Removed pre-revision result tables (`results/spatial_2016_diagnostics.csv`, `temporal_cross_analysis.csv`, `sigma_width_summary.csv`) and the intermediate `results/beta_sweep/` directory.
+- **Dangling Tracked Figures**: Removed untracked raster remnants (`publication_figures/Fig.1a/`).
+
+### Changed
+- **Unified 2D SWE--Exner Subpackage**: Synchronized `src/stability/__init__.py` to directly expose `solve_bar_stability`, `find_most_amplified_mode`, `compute_curvature_modulation_exact`, and `solve_modal_competition`.
+- **Codebase Internationalization & Polish**: Completely rewritten docstrings and comments across `src/morphodynamics/`, `src/spectral/`, `src/data/`, and `src/gee_data/` into clear, standard English.
+- **Hydrometric Timeseries Clarification**: Clarified documentation in `README.md` and `results/README.md` to reflect that annual stability was solved for the 14 surveyed years with complete hydrometric and cross-sectional data spanning 2000–2021.
+- **Figure S1 / S2 Renaming in Release Notes**: Corrected SI figure cross-references in CHANGELOG notes (Figure S1: automated trunk validation; Figure S2: along-stream width gradient).
+
+---
+
 ## [1.1.0] - 2026-09-03 (ESPL Revision Polish & Supporting Information Monotonicity)
 
 This release aligns the repository structure, data tables, and figures with the final revised Supporting Information and manuscript structure for ESPL:
 
 ### Added
-- **Figure S1 Pipeline & Plotting Script (`publication_figures/plot_fig_s01_width_gradient.py`)**:
-  - Adds standalone reproducible script generating Figure S1: 3-row vertically stacked along-channel local dimensionless channel width gradient ($|\mathrm{d}B/\mathrm{d}s|$) profiles and cumulative reach coverage distribution functions (CDFs).
-  - High-resolution vector PDF (`publication_figures/output/fig_s01_width_gradient.pdf`) and 300 DPI preview PNG (`fig_s01_width_gradient.png`).
+- **Figure S1 Pipeline & Plotting Script (`publication_figures/plot_fig_s01_trunk_validation.py`)**:
+  - Adds standalone reproducible script generating Figure S1: Algorithmic validation of automated trunk extraction against manual/conveyance reference in wandering reaches.
+- **Figure S2 Pipeline & Plotting Script (`publication_figures/plot_fig_s02_width_gradient.py`)**:
+  - Adds standalone reproducible script generating Figure S2: 3-row vertically stacked along-channel local dimensionless channel width gradient ($|\mathrm{d}B/\mathrm{d}s|$) profiles and cumulative reach coverage distribution functions (CDFs).
+  - High-resolution vector PDF (`publication_figures/output/fig_s02_width_gradient.pdf`) and 300 DPI preview PNG (`fig_s02_width_gradient.png`).
   - Plain-text in-situ threshold labels for weak ($|\mathrm{d}B/\mathrm{d}s| \le 0.10$) and moderate ($|\mathrm{d}B/\mathrm{d}s| \le 0.20$) variations.
 - **Discharge-Induced Width Perturbation Sensitivity Data**:
   - Adds 4 systematic sensitivity test configurations (contraction $-25\%$, expansion $+25\%$, stage offset $\pm 50\,\mathrm{m}$, and random discharge noise $\pm 25\%$) to Table S6 (`table_s6_spectral_sensitivity.csv`), demonstrating that discharge-dependent width fluctuations alter the dominant wavelength by $< 1.0\%$.
-
 ### Changed
 - **Strictly Monotonic Supporting Information Table Renumbering (Tables S1–S9)**:
   - Renamed and reordered all SI CSV tables in `results/` to establish exact 1-to-1 correspondence with the revised manuscript and Supporting Information:

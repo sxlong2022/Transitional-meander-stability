@@ -88,8 +88,7 @@ $$
 │   │   ├── solve_bar_stability.py      # Chebyshev spectral generalized eigenvalue solver
 │   │   ├── compute_all_revision_tables.py # Batch script reproducing Tables 3, 4, S1-S4, S8, S9
 │   │   ├── generate_si_uncertainty_csvs.py# Batch script reproducing Tables S5-S7
-│   │   ├── run_phase_diagram.py        # 3D (Cf, Fr, beta) parameter space sweep
-│   │   └── os_operator_curved.py       # Curvature perturbation operator
+│   │   └── run_phase_diagram.py        # Parameter space sweep (Cf, Fr, beta)
 │   ├── morphodynamics/                 # Remote sensing and channel network extraction
 │   │   ├── extract_main_channel.py     # Graph-theoretic Dijkstra channel trunk router
 │   │   ├── validate_trunk_extraction.py# Empirical validation of automated trunks for braided years
@@ -97,12 +96,8 @@ $$
 │   │   └── run_rivgraph_batch.py       # 26-year batch execution wrapper
 │   ├── spectral/                       # Spatial series and spectral analysis
 │   │   └── analyze_profiles.py         # FFT, PSD, e-folding length, and cross-correlation
-│   ├── bar_modes/                      # Bar mode predictors
-│   │   └── predict_bars.py             # Crosato-Mosselman mode predictor
-│   ├── diagnostics/                    # Unified stability diagnostic API
-│   │   └── diagnose_stability.py       # Single and batch point diagnostic routines
 │   └── data/                           # Hydrometric data compilation
-│       └── compile_hydraulic_params.py # Compiles annual and spatial hydraulic parameters
+│       └── compile_hydraulic_params.py # Compiles and verifies annual and spatial hydraulic parameters
 ├── results/                            # Pre-computed datasets and tables (100% reproducible)
 │   ├── README.md                       # Data dictionary for all CSV tables
 │   ├── temporal_stability_2d.csv       # Table 3 (Main text)
@@ -117,13 +112,13 @@ $$
 │   ├── table_s8_multi_beta.csv         # Table S8 (3D parameter space exploration)
 │   ├── table_s9_mode_competition.csv   # Table S9 (Transverse mode competition)
 │   ├── trunk_validation_metrics.csv    # Quantitative metrics for trunk extraction validation
-│   ├── hydraulic_params_timeseries.csv # Annual reach-averaged hydraulics (2000-2021)
+│   ├── hydraulic_params_timeseries.csv # Annual reach-averaged hydraulics (14 surveyed years spanning 2000–2021)
 │   ├── hydraulic_params_spatial_2016.csv # Cross-sectional hydraulics along 2016 reach
 │   ├── profiles/                       # 26-year RivGraph link profiles
 │   ├── trunks/                         # 26-year primary continuous channel trunks
 │   ├── spectral/                       # Spectral summary and annual PSD curves
 │   └── phase_diagram/                  # Dense grid sweep data for Figure 10
-├── publication_figures/                # Standalone plotting scripts for Figures 1–10 and Fig. S1
+├── publication_figures/                # Standalone plotting scripts for Figures 1–10 and Figs. S1–S2
 │   ├── figure_utils.py                 # Styling setup (Okabe-Ito, 600 DPI, STIX math)
 │   ├── plot_fig01_study_area.py        # Figure 1: Study area & river reach
 │   ├── plot_fig02_pipeline.py          # Figure 2: Integrated methodology workflow
@@ -134,7 +129,7 @@ $$
 │   ├── plot_fig07_spatial_diagnostics.py # Figure 7: Spatial stability profiles
 │   ├── plot_fig08_spectral.py          # Figure 8: Spectral characteristics of B(s) and C(s)
 │   ├── plot_fig09_nubeta_collapse.py   # Figure 9: Model-derived curvature scaling
-│   ├── plot_fig10_phase_diagram.py     # Figure 10: 3D stability phase diagram
+│   ├── plot_fig10_phase_diagram.py     # Figure 10: Stability phase diagram in (Cf, Fr) space (2D slice at beta=130)
 │   ├── plot_fig_s01_trunk_validation.py# Figure S1: Automated trunk validation against manual reference
 │   ├── plot_fig_s02_width_gradient.py  # Figure S2: Along-stream width gradient profiles & CDF
 │   └── output/                         # Pre-compiled high-res vector figures (PDF / PNG)
@@ -251,7 +246,7 @@ python publication_figures/plot_fig08_spectral.py
 # Figure 9: Model-derived curvature scaling and bend parameter sensitivity
 python publication_figures/plot_fig09_nubeta_collapse.py
 
-# Figure 10: 3D stability phase diagram across (Cf, Fr, beta) space
+# Figure 10: Stability phase diagram in (Cf, Fr) space (representative 2D slice at beta=130)
 python publication_figures/plot_fig10_phase_diagram.py
 
 # Figure S1 (Supporting Information): Automated trunk extraction validation against manual reference

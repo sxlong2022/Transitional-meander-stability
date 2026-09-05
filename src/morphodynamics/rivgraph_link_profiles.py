@@ -1,12 +1,10 @@
-"""RivGraph ： link  s, x, y, B(s), C(s)。
+"""RivGraph channel link profiles: along-link computation of s, x, y, B(s), and C(s).
 
-：
--  RivGraph  link ；
--  link ， (s, x, y)；
--  B(s)；
--  C(s)。
-
- PIV  Mn(s) 。
+Core geometric routines:
+- Reads binary water mask GeoTIFF and RivGraph link shapefiles.
+- Densifies sampling along each link centerline by arc length s to produce (s, x, y).
+- Measures local channel width B(s) via normal ray intersections with water boundaries.
+- Calculates centerline curvature C(s) from smoothed coordinate derivatives.
 """
 
 from __future__ import annotations
@@ -29,9 +27,9 @@ def _meters_per_degree(lat_deg: float) -> Tuple[float, float]:
 
 
 def _iter_lines_from_vector(path: Path) -> Iterable[Tuple[str, LineString]]:
-    """ LineString  id。
+    """Iterate over LineString geometries and identifiers from a vector file.
 
-     "id"  "link_id" ；，。
+    Prioritizes "id" or "link_id" fields; falls back to sequential indices.
     """
 
     with fiona.open(path) as src:
@@ -60,27 +58,27 @@ def _iter_lines_from_vector(path: Path) -> Iterable[Tuple[str, LineString]]:
             )
 
             for li, line in enumerate(lines):
-# LineString， id
+                # 若一个要素中包含多条 LineString，则在 id 后附加子索引
                 yield (f"{link_id}_{li}" if li > 0 else link_id, line)
 
 
 def _densify_line(line: LineString, step: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """ step (m)  LineString 。
+    """按给定弧长间距 step (m) 对 LineString 进行加密采样。
 
-    ：
-    - s : ， (n,)
-    - xs, ys : ， (n,)
+    返回：
+    - s : 沿程距离数组，形状 (n,)
+    - xs, ys : 采样点坐标，形状 (n,)
     """
 
     if step <= 0:
-        raise ValueError("step ")
+        raise ValueError("step 必须为正数")
 
     length = line.length
     if length <= 0:
-        raise RuntimeError("LineString  0，")
+        raise RuntimeError("LineString 长度为 0，无法加密采样")
 
-# ，
-# （ link  step  2 ， 0）
+    # 如果原始几何本身已经包含足够顶点，优先保留这些顶点
+    # （避免在短 link 上因 step 过大导致只有 2 个采样点，从而曲率恒为 0）
     coords = np.asarray(line.coords, dtype=float)
     if coords.ndim == 2 and coords.shape[0] >= 3:
         xs0 = coords[:, 0]
@@ -95,7 +93,7 @@ def _densify_line(line: LineString, step: float) -> Tuple[np.ndarray, np.ndarray
             return s, xs0, ys0
 
     n_step = int(np.ceil(length / step))
-# 3 （n_step>=2）， 0
+    # 至少 3 个点（n_step>=2），否则曲率计算会退化为全 0
     n_step = max(n_step, 2)
     s = np.linspace(0.0, length, n_step + 1)
     xs = np.empty_like(s)
@@ -109,11 +107,11 @@ def _densify_line(line: LineString, step: float) -> Tuple[np.ndarray, np.ndarray
 
 def _densify_line_always(line: LineString, step: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     if step <= 0:
-        raise ValueError("step ")
+        raise ValueError("step 必须为正数")
 
     length = line.length
     if length <= 0:
-        raise RuntimeError("LineString  0，")
+        raise RuntimeError("LineString 长度为 0，无法加密采样")
 
     n_step = int(np.ceil(length / step))
     n_step = max(n_step, 2)
@@ -128,7 +126,7 @@ def _densify_line_always(line: LineString, step: float) -> Tuple[np.ndarray, np.
 
 
 def _compute_tangent_normal(xs: np.ndarray, ys: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """ (tx, ty)  (nx, ny) 。"""
+    """根据采样点坐标计算切向 (tx, ty) 和法向 (nx, ny) 单位向量。"""
 
     dx = np.gradient(xs)
     dy = np.gradient(ys)
@@ -137,7 +135,7 @@ def _compute_tangent_normal(xs: np.ndarray, ys: np.ndarray) -> Tuple[np.ndarray,
     tx = dx / t_norm
     ty = dy / t_norm
 
-# ： 90
+    # 法向：切向顺时针旋转 90 度
     nx = ty
     ny = -tx
 
@@ -145,7 +143,7 @@ def _compute_tangent_normal(xs: np.ndarray, ys: np.ndarray) -> Tuple[np.ndarray,
 
 
 def _compute_curvature(xs: np.ndarray, ys: np.ndarray, s: np.ndarray) -> np.ndarray:
-    """ (xs, ys)  s  C(s)。"""
+    """根据 (xs, ys) 与弧长 s 计算离散曲率 C(s)。"""
 
     dx = np.gradient(xs)
     dy = np.gradient(ys)
@@ -155,7 +153,7 @@ def _compute_curvature(xs: np.ndarray, ys: np.ndarray, s: np.ndarray) -> np.ndar
     ty = dy / t_norm
 
     theta = np.unwrap(np.arctan2(ty, tx))
-# 
+    # 使用弧长作为自变量对方位角求导
     dtheta_ds = np.gradient(theta, s)
     return dtheta_ds
 
@@ -171,74 +169,74 @@ def _sample_width_along_normal(
     sample_spacing: float,
     min_valid_fraction: float = 0.1,
 ) -> np.ndarray:
-    """，- B(s)。
+    """沿每个采样点的法线方向，通过水-陆交界点计算局地宽度 B(s)。
 
-    ：
-    1. （RivGraph ）；
-    2. ， B；
-    3. 。
+    改进版：
+    1. 不再强制要求中心点恰好在水体内（RivGraph 骨架线常有像元边界偏移）；
+    2. 寻找法线上最长连续水体区段，以该区段长度作为 B；
+    3. 仅当连续水体区段足够长时才返回有效值。
 
-    ：
-    - mask:  (1=, 0=)
-    - transform:  (rasterio.Affine)
-    - xs, ys: 
-    - nx, ny: 
-    - search_halfwidth:  (m)
-    - sample_spacing:  (m)
-    - min_valid_fraction:  B 
+    参数：
+    - mask: 二值水体掩膜数组 (1=水, 0=非水)
+    - transform: 栅格仿射变换 (rasterio.Affine)
+    - xs, ys: 采样点坐标
+    - nx, ny: 法向单位向量
+    - search_halfwidth: 法线方向搜索半宽 (m)
+    - sample_spacing: 法线方向采样间距 (m)
+    - min_valid_fraction: 法线上水体像元占比低于该值时认为 B 无效
     """
 
     h, w = mask.shape
     widths = np.full_like(xs, np.nan, dtype=float)
 
-# 
+    # 预先构建相对坐标
     u_vals = np.arange(-search_halfwidth, search_halfwidth + sample_spacing, sample_spacing, dtype=float)
     if u_vals.size < 3:
         return widths
 
     for i, (x0, y0, nx0, ny0) in enumerate(zip(xs, ys, nx, ny)):
-# 
+        # 构造法线上采样点
         xu = x0 + u_vals * nx0
         yu = y0 + u_vals * ny0
 
-# 
+        # 转换到行列索引
         rr, cc = rowcol(transform, xu, yu)
         rr = np.asarray(rr)
         cc = np.asarray(cc)
-# ：
+        # 越界处理：标记为陆地
         in_bounds = (rr >= 0) & (rr < h) & (cc >= 0) & (cc < w)
         water = np.zeros_like(u_vals, dtype=np.uint8)
         water[in_bounds] = mask[rr[in_bounds], cc[in_bounds]]
 
-# ：
+        # 质量控制：整条法线上水体比例过低则跳过
         water_frac = water.sum() / float(water.size)
         if water_frac < min_valid_fraction:
             continue
 
-# （run-length ）
-# water  0，
+        # 寻找最长连续水体区段（run-length 方法）
+        # 在 water 数组首尾各添加一个 0，方便检测边界
         padded = np.concatenate([[0], water, [0]])
         diff = np.diff(padded.astype(np.int8))
-# (0→1)
+        # 上升沿 (0→1) 位置
         starts = np.where(diff == 1)[0]
-# (1→0)
+        # 下降沿 (1→0) 位置
         ends = np.where(diff == -1)[0]
 
         if starts.size == 0 or ends.size == 0:
             continue
 
-# （）
+        # 每段长度（以采样点数计）
         lengths = ends - starts
         max_idx = np.argmax(lengths)
         run_start = starts[max_idx]
         run_end = ends[max_idx]
 
-# u
+        # 计算该区段对应的 u 范围
         left_u = u_vals[run_start]
-        right_u = u_vals[run_end - 1]  # run_end  0
+        right_u = u_vals[run_end - 1]  # run_end 指向区段结束后第一个 0
 
         width_candidate = right_u - left_u
-# ：
+        # 基本合理性检查：宽度应为正
         if width_candidate > 0:
             widths[i] = width_candidate
 
@@ -253,32 +251,32 @@ def compute_link_profiles(
     sample_spacing_factor: float = 0.5,
     min_valid_fraction: float = 0.05,
 ) -> Dict[str, Dict[str, np.ndarray]]:
-    """ RivGraph link ：s, x, y, B(s), C(s)。
+    """为 RivGraph link 计算几何剖面：s, x, y, B(s), C(s)。
 
-    ：{link_id: {"s": ..., "x": ..., "y": ..., "B": ..., "C": ...}}
+    返回字典：{link_id: {"s": ..., "x": ..., "y": ..., "B": ..., "C": ...}}
 
-    ：
-    - normal_search_halfwidth_m: （）， 30 （ 900m@30m ），
-       Jurua-A  500–600m 。
-    - min_valid_fraction: ， 0.05（5%），。
+    参数说明：
+    - normal_search_halfwidth_m: 法线搜索半宽（米），默认 30 个像元（约 900m@30m 分辨率），
+      足以覆盖 Jurua-A 主河道 500–600m 宽度。
+    - min_valid_fraction: 法线上水体比例阈值，默认 0.05（5%），放宽以适应宽搜索范围。
     """
 
     mask_path = Path(mask_raster_path)
     vec_path = Path(links_vector_path)
 
     if not mask_path.exists():
-        raise FileNotFoundError(f": {mask_path}")
+        raise FileNotFoundError(f"找不到水体掩膜栅格: {mask_path}")
     if not vec_path.exists():
-        raise FileNotFoundError(f" RivGraph link : {vec_path}")
+        raise FileNotFoundError(f"找不到 RivGraph link 矢量文件: {vec_path}")
 
     with rasterio.open(mask_path) as src:
         mask_raw = src.read(1)
-# 1， (1=, 0=)
+        # 将任意非零值归一为 1，确保后续按二值掩膜处理 (1=水, 0=非水)
         mask = (mask_raw > 0).astype(np.uint8)
         transform = src.transform
         crs = src.crs
         is_geographic = bool(crs is not None and getattr(crs, "is_geographic", False))
-# ，
+        # 像元大小，用于设置默认搜索半宽与采样间距
         cell_size_x = abs(transform.a)
         cell_size_y = abs(transform.e)
         if is_geographic:
@@ -289,7 +287,7 @@ def compute_link_profiles(
             base_cell = max(cell_size_x, cell_size_y)
 
     if normal_search_halfwidth_m is None:
-# 30 ，
+        # 默认搜索半宽取 30 个像元宽度，确保覆盖整个河道宽度
         normal_search_halfwidth_m = 30.0 * base_cell
 
     sample_spacing = max(base_cell * sample_spacing_factor, base_cell * 0.25)

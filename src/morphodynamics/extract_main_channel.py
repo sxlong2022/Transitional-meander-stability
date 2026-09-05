@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
-"""： RivGraph link  CSV 。
+"""Main channel trunk extraction: reconstruct continuous thalweg trunks from RivGraph link profiles.
 
-：
-  （）， DAG
-  （""link）， **** 。
+Strategy:
+  Because natural meandering rivers exhibit local multidirectional flow (bends may curve westward),
+  a strict Directed Acyclic Graph (DAG) approach drops reversed links. Instead, this module searches
+  for the longest simple path on an **undirected graph**.
 
-  ：
-  1.  profile CSV  link 
-  2.  → 
-  3.  degree=1  → source / target
-  4.  Bellman-Ford（）
-  5.  link  s/B/C 
+  Algorithm:
+  1. Read link endpoint coordinates and arc lengths from RivGraph profile CSVs.
+  2. Perform spatial clustering on link endpoints to construct undirected graph nodes.
+  3. Identify the westernmost and easternmost degree=1 nodes as source and target.
+  4. Find the longest path using a modified Dijkstra algorithm on the undirected graph.
+  5. Concatenate along-stream s, B, and C profiles into a continuous single-thread trunk.
 
-   k>1， links 。
+  For k > 1 trunks, iteratively remove used links and repeat the graph search.
 
-：
+Usage:
   python -m src.morphodynamics.extract_main_channel --years 2016
   python -m src.morphodynamics.extract_main_channel
   python -m src.morphodynamics.extract_main_channel --endpoint-tol 150 --min-trunk-km 20
@@ -43,7 +44,7 @@ TRUNK_DIR = _PROJECT_ROOT / "results" / "trunks"
 # ── Geometry helpers ──────────────────────────────────────
 
 def _meters_per_degree(lat_deg: float) -> Tuple[float, float]:
-    """ (m_per_deg_lon, m_per_deg_lat)。"""
+    """Return (m_per_deg_lon, m_per_deg_lat) for a given latitude."""
     lat_rad = np.deg2rad(float(lat_deg))
     m_per_deg_lat = (
         111132.92
@@ -86,9 +87,9 @@ def _cluster_endpoints(
     y_m: np.ndarray,
     tol_m: float,
 ) -> np.ndarray:
-    """（ Union-Find）。
+    """Cluster endpoints spatially using grid-accelerated Union-Find.
 
-     ID  (0-based, )。
+    Returns an array of 0-based contiguous cluster IDs.
     """
     n = len(x_m)
     if n == 0:
@@ -131,38 +132,30 @@ def _longest_path_undirected(
     source: int,
     target: int,
 ) -> List[str]:
-    """ source→target 。
+    """Find the longest simple path from source to target on an undirected weighted graph.
 
-     Bellman-Ford （ = ）。
-    ： NP-hard，（<1000 nodes）
-    （），Bellman-Ford 。
-
-    （ = ），Bellman-Ford 
-    ； Dijkstra （）。
-
-     link_id 。
+    Uses a modified Dijkstra traversal with max-heap on a tree-like river network.
+    Returns the ordered list of link_ids along the primary trunk.
     """
     if n_nodes <= 0 or len(edges) == 0:
         return []
 
-# 
+    # Build undirected adjacency list
     adj: List[List[Tuple[int, float, str]]] = [[] for _ in range(n_nodes)]
     for u, v, w, lid in edges:
         if 0 <= u < n_nodes and 0 <= v < n_nodes:
             adj[u].append((v, w, lid))
             adj[v].append((u, w, lid))
 
-# Dijkstra ：， Dijkstra
-# ： Dijkstra 。
-# （）， Dijkstra：
-# dist[v] =  v ，（）
+    # Modified Dijkstra for longest path on tree-like graph
+    # Maintain dist[v] = max cumulative distance using a max-heap
     INF = float("inf")
     dist = [-INF] * n_nodes
     pred_node = [-1] * n_nodes
     pred_edge = [""] * n_nodes
     dist[source] = 0.0
 
-# （）
+    # Max-heap (storing negative distances in min-heap)
     heap = [(-0.0, source)]
     visited = [False] * n_nodes
 
@@ -185,8 +178,7 @@ def _longest_path_undirected(
                 pred_node[v] = u
                 pred_edge[v] = lid
                 heapq.heappush(heap, (-new_dist, v))
-
-# 
+    # Backtrack path
     if dist[target] <= -INF / 2:
         return []
 
@@ -196,7 +188,7 @@ def _longest_path_undirected(
         e = pred_edge[cur]
         pn = pred_node[cur]
         if pn < 0 or e == "":
-            return []
+            return []  # Unreachable
         path_edges.append(e)
         cur = pn
 
@@ -213,19 +205,25 @@ def extract_trunks_from_csv(
     weight_by: str = "length",
     min_trunk_length_m: float = 5000.0,
 ) -> Dict[str, pd.DataFrame]:
-    """ link_sBC CSV  k 。
+    """Extract k longest continuous primary channel trunks from link_sBC CSV.
 
-    
-    ------
-    csv_path :  link_sBC CSV 
-    k_trunks : （1）
-    endpoint_tol_m : （）
-    weight_by :  "length"  "length_B"
-    min_trunk_length_m :  trunk （）
+    Parameters
+    ----------
+    csv_path : str or Path
+        Input link_sBC CSV file.
+    k_trunks : int, default 1
+        Number of primary trunks to extract.
+    endpoint_tol_m : float, default 150.0
+        Endpoint spatial clustering tolerance in meters.
+    weight_by : str, default "length"
+        Edge weighting strategy ("length" or "length_B").
+    min_trunk_length_m : float, default 5000.0
+        Minimum valid trunk length in meters.
 
-    
-    ------
-    trunks : {"trunk_0": DataFrame[s_m, lon, lat, B_m, C_1m], ...}
+    Returns
+    -------
+    trunks : dict of str -> pd.DataFrame
+        Dictionary mapping trunk_id to DataFrame with columns [s_m, lon, lat, B_m, C_1m].
     """
     df = pd.read_csv(csv_path)
     link_ids = df["link_id"].unique()
@@ -234,7 +232,7 @@ def extract_trunks_from_csv(
     if n_links == 0:
         return {}
 
-# link
+    # Extract endpoint coordinates and summary statistics for each link
     x0 = np.full(n_links, np.nan)
     y0 = np.full(n_links, np.nan)
     x1 = np.full(n_links, np.nan)
@@ -260,14 +258,14 @@ def extract_trunks_from_csv(
         if np.isfinite(b_vals).any():
             link_meanB[i] = float(np.nanmean(b_vals[np.isfinite(b_vals)]))
 
-# 
+    # Convert geographic coordinates to local Cartesian meters
     lat_ref = float(np.nanmean(np.concatenate([y0[np.isfinite(y0)], y1[np.isfinite(y1)]])))
     m_lon, m_lat = _meters_per_degree(lat_ref)
 
     pts_x_m = np.concatenate([x0 * m_lon, x1 * m_lon])
     pts_y_m = np.concatenate([y0 * m_lat, y1 * m_lat])
 
-# 
+    # Spatial clustering of link endpoints
     valid = np.isfinite(pts_x_m) & np.isfinite(pts_y_m)
     pts_x_safe = np.where(valid, pts_x_m, 1e30)
     pts_y_safe = np.where(valid, pts_y_m, 1e30)
@@ -277,7 +275,7 @@ def extract_trunks_from_csv(
     end_node = cluster_ids[n_links:]
     n_nodes = int(np.max(cluster_ids)) + 1 if cluster_ids.size else 0
 
-# （， source/target）
+    # Compute node longitude coordinates for source/target selection
     node_x_deg = np.full(n_nodes, np.nan)
     for nid in range(n_nodes):
         mm = cluster_ids == nid
@@ -286,7 +284,7 @@ def extract_trunks_from_csv(
         x_deg = np.concatenate([x0, x1])[mm]
         node_x_deg[nid] = float(np.nanmean(x_deg[np.isfinite(x_deg)])) if np.isfinite(x_deg).any() else np.nan
 
-# 
+    # Build undirected weighted edges
     def _edge_weight(i: int) -> float:
         L = float(link_len[i]) if np.isfinite(link_len[i]) else 0.0
         if weight_by == "length_B":
@@ -301,18 +299,18 @@ def extract_trunks_from_csv(
         u = int(start_node[i])
         v = int(end_node[i])
         if u == v:
-            continue
+            continue  # Self-loop
         w = _edge_weight(i)
         if w <= 0:
-            w = 1.0
+            w = 1.0  # Minimum edge weight
         edges.append((u, v, w, lid))
         node_degree[u] += 1
         node_degree[v] += 1
 
-# source/target：degree=1
+    # Select source and target: degree=1 nodes with extreme longitudes
     endpoint_nodes = np.where(node_degree == 1)[0]
     if endpoint_nodes.size == 0:
-# ：/
+        # Degenerate case: fallback to extreme nodes across all valid longitudes
         finite_x = np.isfinite(node_x_deg)
         endpoint_nodes = np.where(finite_x)[0]
 
@@ -320,15 +318,15 @@ def extract_trunks_from_csv(
         return {}
 
     ep_x = node_x_deg[endpoint_nodes]
-# Source: （）
+    # Source: westernmost endpoint (minimum longitude)
     source_idx = endpoint_nodes[int(np.nanargmin(ep_x))]
-# Target: （）
+    # Target: easternmost endpoint (maximum longitude)
     target_idx = endpoint_nodes[int(np.nanargmax(ep_x))]
 
     if source_idx == target_idx:
         return {}
 
-# k  trunk
+    # Iteratively extract k trunks
     remaining = list(edges)
     trunks: Dict[str, pd.DataFrame] = {}
     lid_to_idx = {lid: i for i, lid in enumerate(lid_list)}
@@ -343,12 +341,13 @@ def extract_trunks_from_csv(
         if not path:
             break
 
-# links
+        # Remove already traversed links
         used = set(path)
         remaining = [(u, v, w, lid) for u, v, w, lid in remaining if lid not in used]
 
-# （ link ）
-# link→(u,v)
+        # Concatenate along-stream profiles ensuring consistent link orientation
+        # Build link -> (u, v) mapping to determine traversal direction
+        # 构建 link→(u,v) 映射以确定遍历方向
         link_edge_map: Dict[str, Tuple[int, int]] = {}
         for u, v, w, lid in edges:
             link_edge_map[lid] = (u, v)
@@ -356,7 +355,7 @@ def extract_trunks_from_csv(
         s_cat, lon_cat, lat_cat, B_cat, C_cat = [], [], [], [], []
         s_offset = 0.0
 
-# （ link ）
+        # Reconstruct node path sequence from link path
         node_path = [source_idx]
         for lid in path:
             u, v = link_edge_map[lid]
@@ -366,7 +365,7 @@ def extract_trunks_from_csv(
             elif v == prev:
                 node_path.append(u)
             else:
-# ，
+                # Discontinuous path; break
                 break
 
         for step, lid in enumerate(path):
@@ -383,14 +382,13 @@ def extract_trunks_from_csv(
             b_vals = pd.to_numeric(sub["B_m"], errors="coerce").values
             c_vals = pd.to_numeric(sub["C_1m"], errors="coerce").values
 
-# link
-# start_node[idx]  CSV
-# end_node  link，
+            # Determine traversal direction for this link
+            # Reverse link if entered from the end_node side
             u_edge, v_edge = link_edge_map.get(lid, (start_node[idx], end_node[idx]))
             if step < len(node_path) - 1:
                 path_from = node_path[step]
                 path_to = node_path[step + 1]
-# link  start_node  CSV
+                # start_node corresponds to CSV row 0
                 link_start = start_node[idx]
                 need_reverse = (path_from != link_start) if (link_start in (u_edge, v_edge)) else False
             else:

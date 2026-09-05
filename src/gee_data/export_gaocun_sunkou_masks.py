@@ -1,39 +1,7 @@
-"""
-— Google Drive
+"""Export annual water occurrence masks for Gaocun–Sunkou reach to Google Drive.
 
- Jones DSWE  Landsat Collection 2 ， Google Drive。
- Google Drive  data/GEOTIFFS/Gaocun-Sunkou/ 。
-
- C&G  export_huanghe_masks_to_drive.py，
- Subproject-3 —：
-  -  Gaocun-Sunkou
-  -  2000-2023（）
-  - ROI  Shapefile / GeoJSON / 
-  - Drive  GaocunSunkou_WaterMasks
-
-ROI （ filtered ）：
-  1. data/GIS/Gaocun-Sunkou/GaocunSunkou_boundary_filtered.shp
-  2. data/GIS/Gaocun-Sunkou/GaocunSunkou_boundary.shp
-  3. data/GIS/Gaocun-Sunkou/Gaocun-Sunkou.shp
-  4. data/GIS/Gaocun-Sunkou.shp
-  5. data/GIS/Gaocun-Sunkou/GaocunSunkou_boundary_filtered.geojson
-  6. data/GIS/Gaocun-Sunkou/GaocunSunkou_boundary.geojson
-  7.  (115.55-115.95E, 35.70-36.12N)
-
-：
-  1.  export_jrc_boundary.py  JRC occurrence  Google Drive
-  2.  Shapefile ( shx, dbf )  data/GIS/Gaocun-Sunkou/ 
-  3.  DSWE （ tight ROI）
-
-：
-    python -m src.gee_data.export_gaocun_sunkou_masks --start-year 2000 --end-year 2023
-
-：
-    - earthengine-api
-    - fiona ( Shapefile)  json ( GeoJSON)
-
- GEE：
-    earthengine authenticate
+Computes water masks from Landsat Collection 2 using the Jones et al. (2019) DSWE method
+and exports annual composites to Google Drive.
 """
 from __future__ import annotations
 
@@ -46,11 +14,11 @@ import ee
 
 
 # =====================================================================================
-# === GEE  ======================================================================
+# === GEE 初始化 ======================================================================
 # =====================================================================================
 
 def initialize_gee():
-    """ Google Earth Engine。"""
+    """初始化 Google Earth Engine。"""
     try:
         ee.Initialize(project="hip-apricot-453400-m1")
         print("Google Earth Engine initialized successfully.")
@@ -62,15 +30,15 @@ def initialize_gee():
 
 
 # =====================================================================================
-# ===  ==================================================================
+# === 边界多边形定义 ==================================================================
 # =====================================================================================
 
 DATA_ROOT = Path(__file__).resolve().parent.parent.parent / "data"
 
-# — ROI （WGS84 ）
-# ： PyGEE-SWToolbox  TIF  [115.076, 35.395, 115.914, 35.935]
-# （）:  (115.0759, 35.3641),  (115.9052, 35.9340)
-# 35.34 (35.3641N)
+# 高村—孙口河段备用 ROI 边界（WGS84 经纬度）
+# 来源：用户已有研究 PyGEE-SWToolbox 导出 TIF 边界 [115.076, 35.395, 115.914, 35.935]
+# 站点坐标（十进制）: 高村 (115.0759, 35.3641), 孙口 (115.9052, 35.9340)
+# 南边界取到 35.34 以将高村站(35.3641N)包括在内并预留缓冲
 _GAOCUN_SUNKOU_FALLBACK_BBOX = [
     [115.07, 35.34],
     [115.92, 35.34],
@@ -81,20 +49,20 @@ _GAOCUN_SUNKOU_FALLBACK_BBOX = [
 
 
 def get_roi(site: str = "Gaocun-Sunkou") -> ee.Geometry:
-    """ Shapefile  GeoJSON  EE Geometry。
+    """从本地 Shapefile 或 GeoJSON 读取站点边界并转换为 EE Geometry。
 
-    （ filtered ）：
+    查找顺序（优先使用 filtered 版本）：
         1. data/GIS/{site}/GaocunSunkou_boundary_filtered.shp
         2. data/GIS/{site}/GaocunSunkou_boundary.shp
         3. data/GIS/{site}/{site}.shp
         4. data/GIS/{site}.shp
         5. data/GIS/{site}/GaocunSunkou_boundary_filtered.geojson
         6. data/GIS/{site}/GaocunSunkou_boundary.geojson
-        7. 
+        7. 备用经纬度硬编码矩形框
     """
     gis_dir = DATA_ROOT / "GIS"
 
-# ---  Shapefile ---
+    # --- 尝试 Shapefile ---
     site_compact = site.replace("-", "")
     shp_candidates = [
         gis_dir / site / f"{site_compact}_boundary_filtered.shp",
@@ -106,7 +74,7 @@ def get_roi(site: str = "Gaocun-Sunkou") -> ee.Geometry:
         if shp_path.exists():
             return _load_shp_roi(shp_path)
 
-# ---  GeoJSON ---
+    # --- 尝试 GeoJSON ---
     geojson_candidates = [
         gis_dir / site / f"{site_compact}_boundary_filtered.geojson",
         gis_dir / site / f"{site_compact}_boundary.geojson",
@@ -117,7 +85,7 @@ def get_roi(site: str = "Gaocun-Sunkou") -> ee.Geometry:
         if geojson_path.exists():
             return _load_geojson_roi(geojson_path)
 
-# ---  ---
+    # --- 备用矩形框 ---
     print(f"WARNING: No boundary file found in {gis_dir}")
     print(f"  Searched: {', '.join(str(p.name) for p in shp_candidates + geojson_candidates)}")
     print("  Using fallback bounding box (~1645 km^2, mostly land).")
@@ -126,7 +94,7 @@ def get_roi(site: str = "Gaocun-Sunkou") -> ee.Geometry:
 
 
 def _load_shp_roi(shp_path: Path) -> ee.Geometry:
-    """ Shapefile  ROI 。"""
+    """从 Shapefile 读取 ROI 多边形。"""
     try:
         import fiona
     except ImportError:
@@ -148,7 +116,7 @@ def _load_shp_roi(shp_path: Path) -> ee.Geometry:
 
 
 def _load_geojson_roi(geojson_path: Path) -> ee.Geometry:
-    """ GeoJSON  ROI 。"""
+    """从 GeoJSON 文件读取 ROI 多边形。"""
     import json
 
     print(f"Using GeoJSON ROI: {geojson_path}")
@@ -156,7 +124,7 @@ def _load_geojson_roi(geojson_path: Path) -> ee.Geometry:
     with open(geojson_path, encoding="utf-8") as f:
         data = json.load(f)
 
-# GeoJSON  FeatureCollection  Feature  Geometry
+    # GeoJSON 可能是 FeatureCollection 或 Feature 或裸 Geometry
     if data.get("type") == "FeatureCollection":
         features = data.get("features", [])
         if not features:
@@ -165,7 +133,7 @@ def _load_geojson_roi(geojson_path: Path) -> ee.Geometry:
     elif data.get("type") == "Feature":
         geom = data.get("geometry")
     else:
-        geom = data  # Geometry
+        geom = data  # 裸 Geometry
 
     if geom is None:
         raise ValueError(f"GeoJSON geometry is null: {geojson_path}")
@@ -174,14 +142,14 @@ def _load_geojson_roi(geojson_path: Path) -> ee.Geometry:
 
 
 def _geom_dict_to_ee(geom: dict, source: str) -> ee.Geometry:
-    """ GeoJSON-style geometry dict  ee.Geometry.Polygon。"""
+    """将 GeoJSON-style geometry dict 转换为 ee.Geometry.Polygon。"""
     gtype = geom.get("type")
     coords = geom.get("coordinates")
 
     if gtype == "Polygon":
         outer = coords[0]
     elif gtype == "MultiPolygon":
-# （）
+        # 取最大多边形（面积最大的外环）
         outer = max(coords, key=lambda poly: len(poly[0]))[0]
     else:
         raise ValueError(f"Unsupported geometry type '{gtype}' in {source}")
@@ -191,15 +159,15 @@ def _geom_dict_to_ee(geom: dict, source: str) -> ee.Geometry:
 
 
 # =====================================================================================
-# === Jones DSWE  =========================================================
+# === Jones DSWE 水体掩膜计算 =========================================================
 # =====================================================================================
 
 def compute_dswe_mask(image, water_level: int = 2):
     """
-     Jones et al. (2019) DSWE 。
+    计算 Jones et al. (2019) DSWE 水体掩膜。
 
-     GEE_watermasks (evan-greenbrg) 。
-    ：https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/
+    完全按照 GEE_watermasks (evan-greenbrg) 的精确查表逻辑实现。
+    参考：https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/
           s3fs-public/media/files/LSDS-2084_LandsatC2_L3_DSWE_ADD-v1.pdf
 
     water_level:
@@ -273,7 +241,7 @@ def compute_dswe_mask(image, water_level: int = 2):
 
 def get_landsat_collection(year: int, roi: ee.Geometry,
                            start_date: str, end_date: str):
-    """ Landsat Collection 2 Level-2 。"""
+    """获取指定年份的 Landsat Collection 2 Level-2 数据。"""
 
     if year <= 1984:
         collection_id = "LANDSAT/LT04/C02/T1_L2"
@@ -324,13 +292,13 @@ def get_landsat_collection(year: int, roi: ee.Geometry,
 
 
 def scale_landsat(image):
-    """ Landsat C2 L2 。"""
+    """应用 Landsat C2 L2 缩放因子。"""
     optical = image.select("SR_B.").multiply(0.0000275).add(-0.2)
     return optical.copyProperties(image, ["system:time_start"])
 
 
 def mask_clouds(image):
-    """ QA_PIXEL ； QA_PIXEL 。"""
+    """使用 QA_PIXEL 进行云掩膜；若影像不含 QA_PIXEL 则原样返回。"""
     image = ee.Image(image)
     band_names = image.bandNames()
     qa_exists = band_names.contains("QA_PIXEL")
@@ -350,7 +318,7 @@ def mask_clouds(image):
 
 
 # =====================================================================================
-# ===  ======================================================================
+# === 主导出函数 ======================================================================
 # =====================================================================================
 
 def export_annual_masks(
@@ -361,20 +329,20 @@ def export_annual_masks(
     drive_folder: str = "GaocunSunkou_WaterMasks",
 ):
     """
-     Google Drive。
+    导出年度水体掩膜到 Google Drive。
 
-    
+    参数
     ------
     site : str
-        ， "Gaocun-Sunkou"。
+        站点名称，默认 "Gaocun-Sunkou"。
     start_year : int
-        ， 2000（）。
+        起始年份，默认 2000（与水力参数表对齐）。
     end_year : int
-        ， 2023。
+        结束年份，默认 2023。
     water_level : int
-        DSWE  (1-4)。
+        DSWE 水体置信度等级 (1-4)。
     drive_folder : str
-        Google Drive 。
+        Google Drive 目标文件夹名。
     """
     roi = get_roi(site)
 
@@ -444,7 +412,7 @@ def export_annual_masks(
 
 
 # =====================================================================================
-# === CLI  ========================================================================
+# === CLI 入口 ========================================================================
 # =====================================================================================
 
 def main():
